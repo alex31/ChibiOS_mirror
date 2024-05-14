@@ -306,8 +306,11 @@ bool can_lld_start(CANDriver *canp) {
   if (canp->config->CCCR & FDCAN_CCCR_TEST) {
 	  canp->fdcan->TEST = canp->config->TEST;
   }
+#if !defined  (STM32H7)
   canp->fdcan->RXGFC  = canp->config->RXGFC;
-
+#else
+  canp->fdcan->GFC  = canp->config->GFC;
+#endif
   /* Start clock and disable configuration mode.*/
   canp->fdcan->CCCR &= ~(FDCAN_CCCR_CSR | FDCAN_CCCR_INIT);
 

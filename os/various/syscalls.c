@@ -66,7 +66,7 @@
 #endif
 
 /***************************************************************************/
-
+#ifndef __PICOLIBC__
 __attribute__((used))
 int _read_r(struct _reent *r, int file, char * ptr, int len) {
   (void)r;
@@ -144,6 +144,7 @@ __attribute__((used))
 caddr_t _sbrk_r(struct _reent *r, int incr) {
 #if CH_CFG_USE_MEMCORE
   void *p;
+  (void) r;
 
   chDbgCheck(incr >= 0);
 
@@ -182,6 +183,7 @@ int _isatty_r(struct _reent *r, int fd) {
   return 1;
 }
 
+#endif
 /***************************************************************************/
 
 __attribute__((used))

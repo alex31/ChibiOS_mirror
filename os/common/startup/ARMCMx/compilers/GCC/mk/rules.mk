@@ -125,8 +125,8 @@ MCFLAGS   := -mcpu=$(MCU) -mthumb
 ODFLAGS   = -x --syms
 ASFLAGS   = $(MCFLAGS) $(OPT) -Wa,-amhls=$(LSTDIR)/$(notdir $(<:.s=.lst)) $(ADEFS)
 ASXFLAGS  = $(MCFLAGS) $(OPT) -Wa,-amhls=$(LSTDIR)/$(notdir $(<:.S=.lst)) $(ADEFS)
-CFLAGS    = $(MCFLAGS) $(OPT) $(COPT) $(CWARN) -Wa,-alms=$(LSTDIR)/$(notdir $(<:.c=.lst)) $(DEFS)
-CPPFLAGS  = $(MCFLAGS) $(OPT) $(CPPOPT) $(CPPWARN) -Wa,-alms=$(LSTDIR)/$(notdir $(<:.cpp=.lst)) $(DEFS)
+CFLAGS    = $(MCFLAGS) $(OPT) $(COPT) $(CWARN) $(DEFS)
+CPPFLAGS  = $(MCFLAGS) $(OPT) $(CPPOPT) $(CPPWARN) $(DEFS)
 LDFLAGS   = $(MCFLAGS) $(OPT) -nostartfiles $(LLIBDIR) -Wl,-Map=$(BUILDDIR)/$(PROJECT).map,--cref,--no-warn-mismatch,--library-path=$(STARTUPLD),--script=$(LDSCRIPT)$(LDOPT)
 
 # Generate dependency information
@@ -251,11 +251,14 @@ endif
 ifeq ($(USE_VERBOSE_COMPILE),yes)
 	$(OD) $(ODFLAGS) $< > $@
 	$(SZ) $<
+	$(SZ) $< -A | grep -E '\.text|\.rodata|\.data|\.bss' | perl -lanE 'say "@F[0]\t@F[1]"'
 else
 	@echo Creating $@
 	@$(OD) $(ODFLAGS) $< > $@
 	@echo
 	@$(SZ) $<
+	@echo
+	@$(SZ) $< -A | grep -E '\.text|\.rodata|\.data|\.bss' | perl -lanE 'say "@F[0]\t@F[1]"'
 endif
 
 %.list: %.elf

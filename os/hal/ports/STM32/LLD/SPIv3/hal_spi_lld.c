@@ -70,7 +70,11 @@ SPIDriver SPID6;
 
 static const uint32_t dummytx = STM32_SPI_FILLER_PATTERN;
 static uint32_t dummyrx;
-
+#if defined(STM32_SPI_BDMA_REQUIRED)
+/* bdma is connected to Domain3 ram, .ram4 in H7 linker scripts */
+__attribute__((section(".ram4")))
+static uint32_t dummyrx_d3;
+#endif
 /*===========================================================================*/
 /* Driver local functions.                                                   */
 /*===========================================================================*/
@@ -599,12 +603,12 @@ void spi_lld_start(SPIDriver *spip) {
                                       STM32_SPI_SPI6_IRQ_PRIORITY,
                                       (stm32_dmaisr_t)spi_lld_serve_bdma_rx_interrupt,
                                       (void *)spip);
-      osalDbgAssert(spip->rx.dma != NULL, "unable to allocate stream");
+      osalDbgAssert(spip->rx.bdma != NULL, "unable to allocate stream");
       spip->tx.bdma = bdmaStreamAllocI(STM32_SPI_SPI6_TX_BDMA_STREAM,
                                       STM32_SPI_SPI6_IRQ_PRIORITY,
                                       (stm32_dmaisr_t)spi_lld_serve_bdma_tx_interrupt,
                                       (void *)spip);
-      osalDbgAssert(spip->tx.dma != NULL, "unable to allocate stream");
+      osalDbgAssert(spip->tx.bdma != NULL, "unable to allocate stream");
       rccEnableSPI6(true);
       bdmaSetRequestSource(spip->rx.bdma, STM32_DMAMUX2_SPI6_RX);
       bdmaSetRequestSource(spip->tx.bdma, STM32_DMAMUX2_SPI6_TX);
@@ -834,7 +838,7 @@ void spi_lld_ignore(SPIDriver *spip, size_t n) {
 #endif
 #if defined(STM32_SPI_BDMA_REQUIRED)
   {
-    bdmaStreamSetMemory(spip->rx.bdma, &dummyrx);
+    bdmaStreamSetMemory(spip->rx.bdma, &dummyrx_d3);
     bdmaStreamSetTransactionSize(spip->rx.bdma, n);
     bdmaStreamSetMode(spip->rx.bdma, spip->rxdmamode);
 
@@ -951,7 +955,7 @@ void spi_lld_send(SPIDriver *spip, size_t n, const void *txbuf) {
 #endif
 #if defined(STM32_SPI_BDMA_REQUIRED)
   {
-    bdmaStreamSetMemory(spip->rx.bdma, &dummyrx);
+    bdmaStreamSetMemory(spip->rx.bdma, &dummyrx_d3);
     bdmaStreamSetTransactionSize(spip->rx.bdma, n);
     bdmaStreamSetMode(spip->rx.bdma, spip->rxdmamode);
 

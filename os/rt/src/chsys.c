@@ -142,6 +142,7 @@ const os_instance_config_t ch_core1_cfg = {
 void chSysWaitSystemState(system_state_t state) {
 
   while (ch_system.state != state) {
+     asm volatile ("nop");
   }
 }
 
@@ -230,6 +231,7 @@ void chSysHalt(const char *reason) {
 
   /* Harmless infinite loop.*/
   while (true) {
+     asm volatile ("nop");
   }
 }
 

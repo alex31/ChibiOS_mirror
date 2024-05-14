@@ -146,11 +146,13 @@ extern "C" {
   msg_t i2cStart(I2CDriver *i2cp, const I2CConfig *config);
   void i2cStop(I2CDriver *i2cp);
   i2cflags_t i2cGetErrors(I2CDriver *i2cp);
+  __attribute__((access (write_only, 5, 6), access (read_only,  3, 4)))
   msg_t i2cMasterTransmitTimeout(I2CDriver *i2cp,
                                  i2caddr_t addr,
                                  const uint8_t *txbuf, size_t txbytes,
                                  uint8_t *rxbuf, size_t rxbytes,
                                  sysinterval_t timeout);
+  __attribute__((access (write_only, 3, 4)))
   msg_t i2cMasterReceiveTimeout(I2CDriver *i2cp,
                                 i2caddr_t addr,
                                 uint8_t *rxbuf, size_t rxbytes,
@@ -161,8 +163,10 @@ extern "C" {
 #endif
 #if I2C_SUPPORTS_SLAVE_MODE == TRUE
   msg_t i2cSlaveMatchAddress(I2CDriver *i2cp, i2caddr_t  i2cadr);
+  __attribute__((access (write_only, 3, 4)))
   msg_t i2cSlaveReceiveTimeout(I2CDriver *i2cp, uint8_t *rxbuf,
                                size_t rxbytes, sysinterval_t timeout);
+  __attribute__((access (read_only, 3, 4)))
   msg_t i2cSlaveTransmitTimeout(I2CDriver *i2cp, const uint8_t *txbuf,
                                 size_t txbytes, sysinterval_t timeout);
 #endif

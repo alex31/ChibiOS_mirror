@@ -31,6 +31,27 @@
 /* Driver constants.                                                         */
 /*===========================================================================*/
 
+/*
+ * The following macros from the ST header file are replaced with better
+ * equivalents.
+ */
+#undef FDCAN_NBTP_NTSEG2
+#undef FDCAN_NBTP_NTSEG1
+#undef FDCAN_NBTP_NBRP
+#undef FDCAN_NBTP_NSJW
+
+#undef FDCAN_DBTP_DSJW
+#undef FDCAN_DBTP_DTSEG2
+#undef FDCAN_DBTP_DTSEG1
+#undef FDCAN_DBTP_DBRP 
+
+#undef FDCAN_TEST_TX
+
+#ifdef STM32H7
+#undef FDCAN_GFC_ANFE
+#undef FDCAN_GFC_ANFS
+#endif
+
 /**
  * @brief   Maximum number of bytes in data of CAN packets.
  */
@@ -45,6 +66,43 @@
  * @brief   Number of receive mailboxes.
  */
 #define CAN_RX_MAILBOXES            2
+
+
+/**
+ * @name    FDCAN registers helper macros
+ * @{
+ */
+
+/**< @brief  NBTP NTSEG2 field macro.*/
+#define FDCAN_NBTP_NTSEG2(n)	(n << FDCAN_NBTP_NTSEG2_Pos)
+/**< @brief  NBTP NTSEG1 field macro.*/
+#define FDCAN_NBTP_NTSEG1(n)	(n << FDCAN_NBTP_NTSEG1_Pos)
+/**< @brief  NBTP NBRP field macro.*/
+#define FDCAN_NBTP_NBRP(n)	(n << FDCAN_NBTP_NBRP_Pos)
+/**< @brief  NBTP NSJW field macro.*/
+#define FDCAN_NBTP_NSJW(n)	(n << FDCAN_NBTP_NSJW_Pos)
+
+/**< @brief  DBTP DSJW field macro.*/
+#define FDCAN_DBTP_DSJW(n)	(n << FDCAN_DBTP_DSJW_Pos)
+/**< @brief  DBTP DTSEG2 field macro.*/
+#define FDCAN_DBTP_DTSEG2(n)	(n << FDCAN_DBTP_DTSEG2_Pos)
+/**< @brief  DBTP DTSEG1 field macro.*/
+#define FDCAN_DBTP_DTSEG1(n)	(n << FDCAN_DBTP_DTSEG1_Pos)
+/**< @brief  DBTP DBRP field macro.*/
+#define FDCAN_DBTP_DBRP(n)	(n << FDCAN_DBTP_DBRP_Pos)
+
+/**< @brief  TEST TX field macro.*/
+#define FDCAN_TEST_TX(n)	(n << FDCAN_TEST_TX_Pos) 
+
+#ifdef STM32H7
+#define FDCAN_GFC_ANFE(n)	(n << FDCAN_GFC_ANFE_Pos) 
+#define FDCAN_GFC_ANFS(n)	(n << FDCAN_GFC_ANFS_Pos) 
+#endif
+
+#define FDCAN_IDE_STD                 0           /**< @brief Standard id.    */
+#define FDCAN_IDE_EXT                 1           /**< @brief Extended id.    */
+#define FDCAN_RTR_DATA                0           /**< @brief Data frame.     */
+#define FDCAN_RTR_REMOTE              1           /**< @brief Remote frame.   */
 
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
@@ -344,7 +402,11 @@ typedef struct hal_can_config {
   /**
    * @brief   Global filter configuration register.
    */
+#if !defined  (STM32H7)
   uint32_t                  RXGFC;
+#else
+  uint32_t                  GFC;
+#endif
 } CANConfig;
 
 /**
