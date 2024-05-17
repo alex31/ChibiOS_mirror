@@ -106,8 +106,8 @@ static inline void init_pwr(void) {
   PWR->CR3   = STM32_PWR_CR3 & 0x000000FFU;
   while ((PWR->CSR1 & PWR_CSR1_ACTVOSRDY) == 0)
     ; /* CHTODO timeout handling.*/
-
   PWR->CR1   = STM32_PWR_CR1 | 0xF0000000U;
+
   PWR->CR2   = STM32_PWR_CR2;
   PWR->CR3   = STM32_PWR_CR3;   /* Other bits, lower byte is not changed.   */
   PWR->CPUCR = STM32_PWR_CPUCR;
@@ -130,7 +130,7 @@ static inline void init_pwr(void) {
 #if STM32_PWR_CR2 & PWR_CR2_BREN
 //  while ((PWR->CR2 & PWR_CR2_BRRDY) == 0)
 //    ;
-//  rccEnableBKPRAM(true);
+  rccEnableBKPRAM(true);
 #endif
 }
 
