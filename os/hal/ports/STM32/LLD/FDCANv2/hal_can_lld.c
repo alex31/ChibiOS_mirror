@@ -474,7 +474,7 @@ void can_lld_transmit(CANDriver *canp, canmbx_t mailbox, const CANTxFrame *ctfp)
    * FIXME This sleep not needed if we send two frames with different SID/EID
    *       why?
    */
-  osalThreadSleepMilliseconds(1);
+  // osalThreadSleepMilliseconds(1);
 }
 
 /**
