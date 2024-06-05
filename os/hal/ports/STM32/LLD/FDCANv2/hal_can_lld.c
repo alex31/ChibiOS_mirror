@@ -117,6 +117,10 @@
 #define TIMEOUT_INIT_MS                 250U
 #define TIMEOUT_CSA_MS                  250U
 
+
+_Static_assert((STM32_FDCAN_INTERFACE_NBR * SRAMCAN_SIZE) <= STM32_FDCAN_SHARED_MEMORY_SIZE,
+	       "CAN memory section overflow");
+
 /*===========================================================================*/
 /* Driver exported variables.                                                */
 /*===========================================================================*/
@@ -457,10 +461,9 @@ void can_lld_transmit(CANDriver *canp, canmbx_t mailbox, const CANTxFrame *ctfp)
   osalDbgCheck(dlc_to_bytes[ctfp->DLC] <= CAN_MAX_DLC_BYTES);
 
   /* Retrieve the TX FIFO put index.*/
-  put_index = ((canp->fdcan->TXFQS & FDCAN_TXFQS_TFQPI) >> FDCAN_TXFQS_TFQPI_Pos);
-
-  /* Writing frame. */
+  put_index = (canp->fdcan->TXFQS & FDCAN_TXFQS_TFQPI) >> FDCAN_TXFQS_TFQPI_Pos;
   tx_address = canp->ram_base + (SRAMCAN_TBSA + (put_index * canp->word_size));
+
 
   *tx_address++ = ctfp->header32[0];
   *tx_address++ = ctfp->header32[1];
@@ -469,12 +472,13 @@ void can_lld_transmit(CANDriver *canp, canmbx_t mailbox, const CANTxFrame *ctfp)
   }
 
   /* Starting transmission.*/
-  canp->fdcan->TXBAR = ((uint32_t)1 << put_index);
+  canp->fdcan->TXBAR = 1U << put_index;
   /*
    * FIXME This sleep not needed if we send two frames with different SID/EID
    *       why?
+   * 
    */
-  chThdSleepS(OSAL_MS2I(1));
+  //chThdSleepS(OSAL_MS2I(1));
 }
 
 /**
