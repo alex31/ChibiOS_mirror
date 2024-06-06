@@ -23,6 +23,7 @@
  */
 
 #include "hal.h"
+#include <string.h>
 
 #if HAL_USE_CAN || defined(__DOXYGEN__)
 
@@ -480,6 +481,26 @@ void can_lld_transmit(CANDriver *canp, canmbx_t mailbox, const CANTxFrame *ctfp)
    */
   //chThdSleepS(OSAL_MS2I(1));
 }
+
+void can_lld_set_extended_filter(CANDriver *canp, CANRxFilterIndex filter_index,
+				 const CANRxExtendedFilter *crefp, uint8_t filter_array_size) {
+  uint32_t *rf_address = 0;
+  switch(filter_index.bank) {
+  case 0:
+    osalDbgCheck(filter_index.index <= STM32_FDCAN_RF0_NBR);
+    osalDbgCheck(filter_array_size <= SRAMCAN_RF0_SIZE);
+    rf_address = canp->ram_base + (SRAMCAN_RF0SA + (filter_index.index * SRAMCAN_RF0_SIZE));
+    break;
+    
+  case 1:
+    osalDbgCheck(filter_index.index <= STM32_FDCAN_RF1_NBR);
+    osalDbgCheck(filter_array_size <= SRAMCAN_RF1_SIZE);
+    rf_address = canp->ram_base + (SRAMCAN_RF1SA + (filter_index.index * SRAMCAN_RF1_SIZE));
+    break;
+  }
+
+  memcpy(rf_address, crefp, filter_array_size * sizeof(CANRxExtendedFilter));
+ }
 
 /**
  * @brief   Determines whether a frame has been received.
