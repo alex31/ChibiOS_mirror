@@ -388,14 +388,6 @@ typedef struct {
   };
 } CANRxExtendedFilter;
 
-/**
- * @brief   filter index with bank (0 or 1) and index in the bank
- * @note    for use in filter bank management API
-*/
-typedef struct {
-  uint8_t bank:1;
-  uint8_t index:7;
-} CANRxFilterIndex;
 
 /**
  * @brief   Type of a CAN configuration structure.
@@ -567,6 +559,9 @@ extern "C" {
                        CANRxFrame *ctfp);
   void can_lld_abort(CANDriver *canp,
                      canmbx_t mailbox);
+  void can_lld_set_extended_filters(CANDriver *canp, uint8_t filter_index,
+				    const CANRxExtendedFilter *crefp,
+				    uint8_t filter_array_size);
 #if CAN_USE_SLEEP_MODE
   void can_lld_sleep(CANDriver *canp);
   void can_lld_wakeup(CANDriver *canp);
