@@ -559,7 +559,7 @@ extern "C" {
                        CANRxFrame *ctfp);
   void can_lld_abort(CANDriver *canp,
                      canmbx_t mailbox);
-  void can_lld_set_extended_filters(CANDriver *canp, uint8_t filter_index,
+  void can_lld_set_extended_filters(CANDriver *canp,
 				    const CANRxExtendedFilter *crefp,
 				    uint8_t filter_array_size);
 #if CAN_USE_SLEEP_MODE

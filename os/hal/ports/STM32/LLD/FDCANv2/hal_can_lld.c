@@ -481,18 +481,43 @@ void can_lld_transmit(CANDriver *canp, canmbx_t mailbox, const CANTxFrame *ctfp)
   //chThdSleepS(OSAL_MS2I(1));
 }
 
+_Static_assert(sizeof(CANRxStandardFilter) == (SRAMCAN_FLS_SIZE * sizeof(int)),
+	       "CANRxStandardFilter size mismatch");
+void can_lld_set_standard_filters(CANDriver *canp,
+				 const CANRxStandardFilter *crefp, uint8_t filter_array_size) {
+  uint32_t *rf_address = 0;
+  osalDbgCheck(filter_array_size <= STM32_FDCAN_FLS_NBR);
+  chSysLock();
+  fdcan_init_mode(canp);
+  rf_address = canp->ram_base + SRAMCAN_FLSSA;
+
+  for (unsigned i = 0U; i < filter_array_size; i++) {
+    *rf_address++ = crefp[i].data32;
+  }
+  canp->fdcan->SIDFC = FDCAN_CONFIG_SIDFC_LSS(filter_array_size) |
+    FDCAN_CONFIG_SIDFC_FLSSA((CAN1_OFFSET_INSTANCE * SRAMCAN_SIZE) + SRAMCAN_FLSSA);
+  fdcan_active_mode(canp);
+  chSysUnlock();
+ }
+
 _Static_assert(sizeof(CANRxExtendedFilter) == (SRAMCAN_FLE_SIZE * sizeof(int)),
 	       "CANRxExtendedFilter size mismatch");
-void can_lld_set_extended_filters(CANDriver *canp, uint8_t filter_index,
+void can_lld_set_extended_filters(CANDriver *canp,
 				 const CANRxExtendedFilter *crefp, uint8_t filter_array_size) {
   uint32_t *rf_address = 0;
-  osalDbgCheck((filter_index + filter_array_size) <= STM32_FDCAN_FLE_NBR);
-  rf_address = canp->ram_base + (SRAMCAN_FLESA + (filter_index * SRAMCAN_FLE_SIZE));
+  osalDbgCheck(filter_array_size <= STM32_FDCAN_FLE_NBR);
+  chSysLock();
+  fdcan_init_mode(canp);
+  rf_address = canp->ram_base + SRAMCAN_FLESA;
 
   for (unsigned i = 0U; i < filter_array_size; i++) {
     *rf_address++ = crefp[i].data32[0];
     *rf_address++ = crefp[i].data32[1];
   }
+  canp->fdcan->XIDFC = FDCAN_CONFIG_XIDFC_LSE(filter_array_size) |
+    FDCAN_CONFIG_XIDFC_FLESA((CAN1_OFFSET_INSTANCE * SRAMCAN_SIZE) + SRAMCAN_FLESA);
+  fdcan_active_mode(canp);
+  chSysUnlock();
  }
 
 /**
