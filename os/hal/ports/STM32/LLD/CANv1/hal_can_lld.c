@@ -80,7 +80,8 @@ CANDriver CAND3;
 static void can_lld_set_filters(CANDriver* canp,
                                 uint32_t can2sb,
                                 uint32_t num,
-                                const CANFilter *cfp) {
+                                const CANFilter *cfp,
+				bool call_before_start) {
 
 #if STM32_CAN_USE_CAN2
   if (canp == &CAND2) {
@@ -92,7 +93,9 @@ static void can_lld_set_filters(CANDriver* canp,
   /* Temporarily enabling CAN clock.*/
 #if STM32_CAN_USE_CAN1
   if (canp == &CAND1) {
+    if (call_before_start) {
     rccEnableCAN1(true);
+    }
     /* Filters initialization.*/
     canp->can->FMR = (canp->can->FMR & 0xFFFF0000) | CAN_FMR_FINIT;
     canp->can->FMR = (canp->can->FMR & 0xFFFF0000) | (can2sb << 8) | CAN_FMR_FINIT;
@@ -101,7 +104,9 @@ static void can_lld_set_filters(CANDriver* canp,
 
 #if STM32_CAN_USE_CAN3
   if (canp == &CAND3) {
-    rccEnableCAN3(true);
+    if (call_before_start) {
+      rccEnableCAN3(true);
+    }
     /* Filters initialization.*/
     canp->can->FMR = (canp->can->FMR & 0xFFFF0000) | CAN_FMR_FINIT;
   }
@@ -175,16 +180,18 @@ static void can_lld_set_filters(CANDriver* canp,
 
   /* Clock disabled, it will be enabled again in can_lld_start().*/
   /* Temporarily enabling CAN clock.*/
+    if (call_before_start) {
 #if STM32_CAN_USE_CAN1
-  if (canp == &CAND1) {
-    rccDisableCAN1();
-  }
+      if (canp == &CAND1) {
+	rccDisableCAN1();
+      }
 #endif
 #if STM32_CAN_USE_CAN3
-  if (canp == &CAND3) {
-    rccDisableCAN3();
-  }
+      if (canp == &CAND3) {
+	rccDisableCAN3();
+      }
 #endif
+    }
 }
 
 /**
@@ -659,9 +666,9 @@ void can_lld_init(void) {
   /* Filters initialization.*/
 #if STM32_CAN_USE_CAN1
 #if STM32_HAS_CAN2
-  can_lld_set_filters(&CAND1, STM32_CAN_MAX_FILTERS / 2, 0, NULL);
+    can_lld_set_filters(&CAND1, STM32_CAN_MAX_FILTERS / 2, 0, NULL, true);
 #else
-  can_lld_set_filters(&CAND1, STM32_CAN_MAX_FILTERS, 0, NULL);
+    can_lld_set_filters(&CAND1, STM32_CAN_MAX_FILTERS, 0, NULL, true);
 #endif
 #endif
 
@@ -1006,23 +1013,23 @@ void canSTM32SetFilters(CANDriver *canp, uint32_t can2sb,
 #endif
 
 #if STM32_CAN_USE_CAN1
-  osalDbgAssert(CAND1.state == CAN_STOP, "invalid state");
+  osalDbgAssert((CAND1.state == CAN_STOP) || (CAND1.state == CAN_READY), "invalid state");
 #endif
 #if STM32_CAN_USE_CAN2
-  osalDbgAssert(CAND2.state == CAN_STOP, "invalid state");
+  osalDbgAssert((CAND2.state == CAN_STOP) || (CAND2.state == CAN_READY), "invalid state");
 #endif
 #if STM32_CAN_USE_CAN3
-  osalDbgAssert(CAND3.state == CAN_STOP, "invalid state");
+  osalDbgAssert((CAND3.state == CAN_STOP) || (CAND3.state == CAN_READY), "invalid state");
 #endif
 
 #if STM32_CAN_USE_CAN1
   if (canp == &CAND1) {
-    can_lld_set_filters(canp, can2sb, num, cfp);
+    can_lld_set_filters(canp, can2sb, num, cfp, CAND1.state == CAN_STOP);
   }
 #endif
 #if STM32_CAN_USE_CAN3
   if (canp == &CAND3) {
-    can_lld_set_filters(canp, can2sb, num, cfp);
+    can_lld_set_filters(canp, can2sb, num, cfp, CAND3.state == CAN_STOP););
   }
 #endif
 }
