@@ -559,14 +559,17 @@ extern "C" {
                        CANRxFrame *ctfp);
   void can_lld_abort(CANDriver *canp,
                      canmbx_t mailbox);
-  void can_lld_set_extended_filters(CANDriver *canp,
-				    const CANRxExtendedFilter *crefp,
-				    uint8_t filter_array_size);
 #if CAN_USE_SLEEP_MODE
   void can_lld_sleep(CANDriver *canp);
   void can_lld_wakeup(CANDriver *canp);
 #endif /* CAN_USE_SLEEP_MODE */
-  void can_lld_serve_interrupt(CANDriver *canp);
+void can_lld_serve_interrupt(CANDriver *canp);
+void canSTM32SetStandardFilters(CANDriver *canp,
+				uint32_t num, 
+				const CANRxStandardFilter *crsfp);
+void canSTM32SetExtendedFilters(CANDriver *canp,
+				uint32_t num, 
+				const CANRxExtendedFilter *crefp);
 #ifdef __cplusplus
 }
 #endif

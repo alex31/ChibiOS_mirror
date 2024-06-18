@@ -1006,32 +1006,11 @@ void can_lld_wakeup(CANDriver *canp) {
  */
 void canSTM32SetFilters(CANDriver *canp, uint32_t can2sb,
                         uint32_t num, const CANFilter *cfp) {
-
-#if STM32_CAN_USE_CAN2
   osalDbgCheck((can2sb <= STM32_CAN_MAX_FILTERS) &&
                (num <= STM32_CAN_MAX_FILTERS));
-#endif
-
-#if STM32_CAN_USE_CAN1
-  osalDbgAssert((CAND1.state == CAN_STOP) || (CAND1.state == CAN_READY), "invalid state");
-#endif
-#if STM32_CAN_USE_CAN2
-  osalDbgAssert((CAND2.state == CAN_STOP) || (CAND2.state == CAN_READY), "invalid state");
-#endif
-#if STM32_CAN_USE_CAN3
-  osalDbgAssert((CAND3.state == CAN_STOP) || (CAND3.state == CAN_READY), "invalid state");
-#endif
-
-#if STM32_CAN_USE_CAN1
-  if (canp == &CAND1) {
-    can_lld_set_filters(canp, can2sb, num, cfp, CAND1.state == CAN_STOP);
-  }
-#endif
-#if STM32_CAN_USE_CAN3
-  if (canp == &CAND3) {
-    can_lld_set_filters(canp, can2sb, num, cfp, CAND3.state == CAN_STOP););
-  }
-#endif
+  
+  osalDbgAssert((canp->state == CAN_STOP) || (canp->state == CAN_READY), "invalid state");
+  can_lld_set_filters(canp, can2sb, num, cfp, canp->state == CAN_STOP);
 }
 
 #endif /* HAL_USE_CAN */

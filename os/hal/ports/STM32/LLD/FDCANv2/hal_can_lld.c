@@ -199,6 +199,15 @@ static bool fdcan_active_mode(CANDriver *canp) {
   return false;
 }
 
+static void can_lld_set_standard_filters(CANDriver *canp,
+					 uint32_t num,
+					 const CANRxStandardFilter *crefp);
+					 
+
+static void can_lld_set_extended_filters(CANDriver *canp,
+					 uint32_t num,
+					 const CANRxExtendedFilter *crefp);
+
 /*===========================================================================*/
 /* Driver interrupt handlers.                                                */
 /*===========================================================================*/
@@ -483,42 +492,64 @@ void can_lld_transmit(CANDriver *canp, canmbx_t mailbox, const CANTxFrame *ctfp)
 
 _Static_assert(sizeof(CANRxStandardFilter) == (SRAMCAN_FLS_SIZE * sizeof(int)),
 	       "CANRxStandardFilter size mismatch");
-void can_lld_set_standard_filters(CANDriver *canp,
-				 const CANRxStandardFilter *crefp, uint8_t filter_array_size) {
+static void can_lld_set_standard_filters(CANDriver *canp,
+					 uint32_t num,
+					 const CANRxStandardFilter *crsfp) {
   uint32_t *rf_address = 0;
-  osalDbgCheck(filter_array_size <= STM32_FDCAN_FLS_NBR);
-  chSysLock();
   fdcan_init_mode(canp);
   rf_address = canp->ram_base + SRAMCAN_FLSSA;
 
-  for (unsigned i = 0U; i < filter_array_size; i++) {
-    *rf_address++ = crefp[i].data32;
+  for (unsigned i = 0U; i < num; i++) {
+    *rf_address++ = crsfp[i].data32;
   }
-  canp->fdcan->SIDFC = FDCAN_CONFIG_SIDFC_LSS(filter_array_size) |
+  canp->fdcan->SIDFC = FDCAN_CONFIG_SIDFC_LSS(num) |
     FDCAN_CONFIG_SIDFC_FLSSA((CAN1_OFFSET_INSTANCE * SRAMCAN_SIZE) + SRAMCAN_FLSSA);
   fdcan_active_mode(canp);
-  chSysUnlock();
  }
 
 _Static_assert(sizeof(CANRxExtendedFilter) == (SRAMCAN_FLE_SIZE * sizeof(int)),
 	       "CANRxExtendedFilter size mismatch");
-void can_lld_set_extended_filters(CANDriver *canp,
-				 const CANRxExtendedFilter *crefp, uint8_t filter_array_size) {
+static void can_lld_set_extended_filters(CANDriver *canp,
+					 uint32_t num,
+					 const CANRxExtendedFilter *crefp) {
   uint32_t *rf_address = 0;
-  osalDbgCheck(filter_array_size <= STM32_FDCAN_FLE_NBR);
-  chSysLock();
   fdcan_init_mode(canp);
   rf_address = canp->ram_base + SRAMCAN_FLESA;
 
-  for (unsigned i = 0U; i < filter_array_size; i++) {
+  for (unsigned i = 0U; i < num; i++) {
     *rf_address++ = crefp[i].data32[0];
     *rf_address++ = crefp[i].data32[1];
   }
-  canp->fdcan->XIDFC = FDCAN_CONFIG_XIDFC_LSE(filter_array_size) |
+  canp->fdcan->XIDFC = FDCAN_CONFIG_XIDFC_LSE(num) |
     FDCAN_CONFIG_XIDFC_FLESA((CAN1_OFFSET_INSTANCE * SRAMCAN_SIZE) + SRAMCAN_FLESA);
   fdcan_active_mode(canp);
-  chSysUnlock();
  }
+
+void canSTM32SetStandardFilters(CANDriver *canp,
+				uint32_t num, 
+				const CANRxStandardFilter *crsfp)
+{
+  osalDbgCheck(num <= STM32_FDCAN_FLS_NBR);
+  osalDbgAssert(canp->state == CAN_READY, "invalid state");
+  chSysLock();
+  can_lld_set_standard_filters(canp, num, crsfp);
+  chSysUnlock();
+}
+
+
+void canSTM32SetExtendedFilters(CANDriver *canp,
+				uint32_t num, 
+				const CANRxExtendedFilter *crefp)
+{
+  osalDbgCheck(num <= STM32_FDCAN_FLE_NBR);
+  osalDbgAssert(canp->state == CAN_READY, "invalid state");
+  chSysLock();
+  can_lld_set_extended_filters(canp, num, crefp);
+  chSysUnlock();
+}
+
+
+
 
 /**
  * @brief   Determines whether a frame has been received.
