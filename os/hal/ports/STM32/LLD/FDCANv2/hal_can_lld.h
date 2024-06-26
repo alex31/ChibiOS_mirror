@@ -88,6 +88,16 @@
 #define FDCAN_14DLC_TO_BYTES        48U
 #define FDCAN_15DLC_TO_BYTES        64U
 
+/**
+ * @brief   for use on BXCan comptatible legacy filtering API
+ */
+#define CAN_IDE_STD                 0           /**< @brief Standard id.    */
+#define CAN_IDE_EXT                 1           /**< @brief Extended id.    */
+#define CAN_FILTER_MODE_MASK	    0U          /**< @brief id+mask filter  */
+#define CAN_FILTER_MODE_ID 	    1U          /**< @brief two id filter   */
+#define CAN_FILTER_FIFO_ASSIGN_1    0U          /**< @brief out to fifo1    */
+#define CAN_FILTER_FIFO_ASSIGN_2    1U          /**< @brief out to fifo2    */
+
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
 /*===========================================================================*/
@@ -197,6 +207,27 @@ typedef enum {
   OPMODE_FDCAN = 1,
   OPMODE_CAN = 2
 } fdcanopmode_t;
+
+/**
+ * @brief   Supported filtering modes for the peripheral FDCAN.
+ */
+typedef enum {
+  FILTERING_FT_RANGE, 
+  FILTERING_FT_DUALID, 
+  FILTERING_FT_MASK, 
+  FILTERING_FT_DISABLE
+} fdcanfilter_t;
+
+typedef enum {
+  FILTERING_FEC_DISABLE,
+  FILTERING_FEC_FIFO_0,
+  FILTERING_FEC_FIFO_1,
+  FILTERING_FEC_REJECT,
+  FILTERING_FEC_PRIORITY,
+  FILTERING_FEC_PRIORITY_FIFO_0,
+  FILTERING_FEC_PRIORITY_FIFO_1,
+  FILTERING_FEC_RXBUFFER
+} fdcanfilterdisplatch_t;
 
 /**
  * @brief   Convert DLC in BYTES.
@@ -351,19 +382,19 @@ typedef struct {
 typedef struct {
   union {
     struct {
-      uint16_t              SFID2:11;
-      uint8_t               _R1:5;
-      uint16_t              SFID1:11;
-      uint8_t               SFEC:3;
-      uint8_t               SFT:2;
+      uint16_t               SFID2:11;
+      uint8_t                _R1:5;
+      uint16_t               SFID1:11;
+      fdcanfilterdisplatch_t SFEC:3;
+      fdcanfilter_t         SFT:2;
     };
     union {
-      uint32_t              data32;
-      uint16_t              data16[2];
-      uint8_t               data8[4];
+      uint32_t               data32;
+      uint16_t               data16[2];
+      uint8_t                data8[4];
     };
   };
-} CANRxStandardFilter;
+} FDCANStandardFilter;
 
 /**
  * @brief   CAN extended filter.
@@ -374,19 +405,60 @@ typedef struct {
 typedef struct {
   union {
     struct {
-      uint32_t              EFID1:29;
-      uint8_t               EFEC:3;
-      uint32_t              EFID2:29;
-      uint8_t               _R1:1;
-      uint8_t               EFT:2;
+      uint32_t               EFID1:29;
+      fdcanfilterdisplatch_t EFEC:3;
+      uint32_t               EFID2:29;
+      uint8_t                _R1:1;
+      fdcanfilter_t          EFT:2;
     };
     union {
-      uint32_t              data32[2];
-      uint16_t              data16[4];
-      uint8_t               data8[8];
+      uint32_t               data32[2];
+      uint16_t               data16[4];
+      uint8_t                data8[8];
     };
   };
-} CANRxExtendedFilter;
+} FDCANExtendedFilter;
+
+
+
+/**
+ * @brief   CAN filter.
+ * @note    Refer to the STM32 reference manual for info about filters.
+ *          To use BxCAN backward compatible filtering API; less powerfull
+ *          but portable among STM32 families
+ */
+typedef struct {
+  /**
+   * @brief   Number of the filter bank to be programmed.
+   */
+  uint32_t                  filter:16;
+  /**
+   * @brief   Filter mode.
+   * @note    This bit represent the CAN_FM1R register bit associated to this
+   *          filter (0=mask mode, 1=list mode).
+   */
+  uint32_t                  mode:1;
+  /**
+   * @brief   Filter scale.
+   * @note    This bit represent the CAN_FS1R register bit associated to this
+   *          filter (0=16 bits mode, 1=32 bits mode).
+   */
+  uint32_t                  scale:1;
+  /**
+   * @brief   Filter mode.
+   * @note    This bit represent the CAN_FFA1R register bit associated to this
+   */
+  uint32_t                  assignment:1;
+  /**
+   * @brief   Filter register 1 (identifier).
+   */
+  uint32_t                  register1;
+  /**
+   * @brief   Filter register 2 (mask/identifier depending on mode=0/1).
+   */
+  uint32_t                  register2;
+} CANFilter;
+
 
 
 /**
@@ -566,10 +638,12 @@ extern "C" {
 void can_lld_serve_interrupt(CANDriver *canp);
 void canSTM32SetStandardFilters(CANDriver *canp,
 				uint32_t num, 
-				const CANRxStandardFilter *crsfp);
+				const FDCANStandardFilter *crsfp);
 void canSTM32SetExtendedFilters(CANDriver *canp,
 				uint32_t num, 
-				const CANRxExtendedFilter *crefp);
+				const FDCANExtendedFilter *crefp);
+void canSTM32SetFilters(CANDriver *canp, uint32_t can2sb,
+			uint32_t num, const CANFilter *cfp);
 #ifdef __cplusplus
 }
 #endif

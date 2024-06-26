@@ -27,6 +27,8 @@
 
 #if HAL_USE_CAN || defined(__DOXYGEN__)
 
+#include "stm32_fdcan.h"
+
 /*===========================================================================*/
 /* Driver constants.                                                         */
 /*===========================================================================*/
@@ -47,11 +49,6 @@
 
 #undef FDCAN_TEST_TX
 
-#ifdef STM32H7
-#undef FDCAN_GFC_ANFE
-#undef FDCAN_GFC_ANFS
-#endif
-
 /**
  * @brief   Maximum number of bytes in data of CAN packets.
  */
@@ -67,6 +64,60 @@
  */
 #define CAN_RX_MAILBOXES            2
 
+/**
+ * @brief   bytes to DLC (Data length code).
+ */
+#define FDCAN_0BYTES_TO_DLC         0U
+#define FDCAN_1BYTES_TO_DLC         1U
+#define FDCAN_2BYTES_TO_DLC         2U
+#define FDCAN_3BYTES_TO_DLC         3U
+#define FDCAN_4BYTES_TO_DLC         4U
+#define FDCAN_5BYTES_TO_DLC         5U
+#define FDCAN_6BYTES_TO_DLC         6U
+#define FDCAN_7BYTES_TO_DLC         7U
+#define FDCAN_8BYTES_TO_DLC         8U
+#define FDCAN_12BYTES_TO_DLC        9U
+#define FDCAN_16BYTES_TO_DLC        10U
+#define FDCAN_20BYTES_TO_DLC        11U
+#define FDCAN_24BYTES_TO_DLC        12U
+#define FDCAN_32BYTES_TO_DLC        13U
+#define FDCAN_48BYTES_TO_DLC        14U
+#define FDCAN_64BYTES_TO_DLC        15U
+
+/**
+ * @brief   DLC (Data length code) to bytes.
+ */
+#define FDCAN_0DLC_TO_BYTES         0U
+#define FDCAN_1DLC_TO_BYTES         1U
+#define FDCAN_2DLC_TO_BYTES         2U
+#define FDCAN_3DLC_TO_BYTES         3U
+#define FDCAN_4DLC_TO_BYTES         4U
+#define FDCAN_5DLC_TO_BYTES         5U
+#define FDCAN_6DLC_TO_BYTES         6U
+#define FDCAN_7DLC_TO_BYTES         7U
+#define FDCAN_8DLC_TO_BYTES         8U
+#define FDCAN_9DLC_TO_BYTES         12U
+#define FDCAN_10DLC_TO_BYTES        16U
+#define FDCAN_11DLC_TO_BYTES        20U
+#define FDCAN_12DLC_TO_BYTES        24U
+#define FDCAN_13DLC_TO_BYTES        32U
+#define FDCAN_14DLC_TO_BYTES        48U
+#define FDCAN_15DLC_TO_BYTES        64U
+
+/**
+ * @brief   for use on BXCan comptatible legacy filtering API
+ */
+#define CAN_IDE_STD                 0           /**< @brief Standard id.    */
+#define CAN_IDE_EXT                 1           /**< @brief Extended id.    */
+#define CAN_FILTER_MODE_MASK	    0U          /**< @brief id+mask filter  */
+#define CAN_FILTER_MODE_ID 	    1U          /**< @brief two id filter   */
+#define CAN_FILTER_FIFO_ASSIGN_1    0U          /**< @brief out to fifo1    */
+#define CAN_FILTER_FIFO_ASSIGN_2    1U          /**< @brief out to fifo2    */
+/*0b100 - Data with EID or (0b110 - RemoteFrame with EID)*/
+#define CAN_FILTER_EID_DATA(x) (((x) << 3)|0b100) /**< @brief for field reg1 */
+
+/*0b110 - Mask enable for EID/SID and DATA/RTR*/
+#define CAN_FILTER_EID_MASK(x) (((x) << 3)|0b110) /**< @brief for field reg2 */
 
 /**
  * @name    FDCAN registers helper macros
@@ -94,11 +145,7 @@
 /**< @brief  TEST TX field macro.*/
 #define FDCAN_TEST_TX(n)	(n << FDCAN_TEST_TX_Pos) 
 
-#ifdef STM32H7
-#define FDCAN_GFC_ANFE(n)	(n << FDCAN_GFC_ANFE_Pos) 
-#define FDCAN_GFC_ANFS(n)	(n << FDCAN_GFC_ANFS_Pos) 
-#endif
-
+/**< @brief   field macro.*/
 #define FDCAN_IDE_STD                 0           /**< @brief Standard id.    */
 #define FDCAN_IDE_EXT                 1           /**< @brief Extended id.    */
 #define FDCAN_RTR_DATA                0           /**< @brief Data frame.     */
@@ -217,6 +264,59 @@
 /*===========================================================================*/
 
 /**
+ * @brief   Supported modes for the peripheral FDCAN.
+ */
+typedef enum {
+  OPMODE_FDCAN = 1,
+  OPMODE_CAN = 2
+} fdcanopmode_t;
+
+
+/**
+ * @brief   Supported filtering modes for the peripheral FDCAN.
+ */
+typedef enum {
+  FILTERING_FT_RANGE, 
+  FILTERING_FT_DUALID, 
+  FILTERING_FT_MASK, 
+  FILTERING_FT_DISABLE
+} fdcanfilter_t;
+
+typedef enum {
+  FILTERING_FEC_DISABLE,
+  FILTERING_FEC_FIFO_0,
+  FILTERING_FEC_FIFO_1,
+  FILTERING_FEC_REJECT,
+  FILTERING_FEC_PRIORITY,
+  FILTERING_FEC_PRIORITY_FIFO_0,
+  FILTERING_FEC_PRIORITY_FIFO_1
+} fdcanfilterdisplatch_t;
+
+/**
+ * @brief   Convert DLC in BYTES.
+ */
+static const uint8_t dlc_to_bytes[] = {
+  FDCAN_0DLC_TO_BYTES,
+  FDCAN_1DLC_TO_BYTES,
+  FDCAN_2DLC_TO_BYTES,
+  FDCAN_3DLC_TO_BYTES,
+  FDCAN_4DLC_TO_BYTES,
+  FDCAN_5DLC_TO_BYTES,
+  FDCAN_6DLC_TO_BYTES,
+  FDCAN_7DLC_TO_BYTES,
+  FDCAN_8DLC_TO_BYTES,
+  FDCAN_9DLC_TO_BYTES,
+  FDCAN_10DLC_TO_BYTES,
+  FDCAN_11DLC_TO_BYTES,
+  FDCAN_12DLC_TO_BYTES,
+  FDCAN_13DLC_TO_BYTES,
+  FDCAN_14DLC_TO_BYTES,
+  FDCAN_15DLC_TO_BYTES
+};
+
+
+
+/**
  * @brief   Type of a CAN driver.
  */
 typedef struct hal_can_driver CANDriver;
@@ -225,6 +325,11 @@ typedef struct hal_can_driver CANDriver;
  * @brief   Type of a transmission mailbox index.
  */
 typedef uint32_t canmbx_t;
+
+/**
+ * @brief   Type of a word size.
+ */
+typedef uint8_t wordsize_t;
 
 #if (CAN_ENFORCE_USE_CALLBACKS == TRUE) || defined(__DOXYGEN__)
 /**
@@ -342,19 +447,19 @@ typedef struct {
 typedef struct {
   union {
     struct {
-      uint16_t              SFID2:11;
-      uint8_t               _R1:5;
-      uint16_t              SFID1:11;
-      uint8_t               SFEC:3;
-      uint8_t               SFT:2;
+      uint16_t               SFID2:11;
+      uint8_t                _R1:5;
+      uint16_t               SFID1:11;
+      fdcanfilterdisplatch_t SFEC:3;
+      fdcanfilter_t	     SFT:2;
     };
     union {
-      uint32_t              data32;
-      uint16_t              data16[2];
-      uint8_t               data8[4];
+      uint32_t               data32;
+      uint16_t               data16[2];
+      uint8_t                data8[4];
     };
   };
-} CANRxStandardFilter;
+} FDCANStandardFilter;
 
 /**
  * @brief   CAN extended filter.
@@ -365,24 +470,68 @@ typedef struct {
 typedef struct {
   union {
     struct {
-      uint32_t              EFID1:29;
-      uint8_t               EFEC:3;
-      uint32_t              EFID2:29;
-      uint8_t               _R1:1;
-      uint8_t               EFT:2;
+      uint32_t               EFID1:29;
+      fdcanfilterdisplatch_t EFEC:3;
+      uint32_t               EFID2:29;
+      uint8_t                _R1:1;
+      fdcanfilter_t	     EFT:2;
     };
     union {
-      uint32_t              data32[2];
-      uint16_t              data16[4];
-      uint8_t               data8[8];
+      uint32_t               data32[2];
+      uint16_t               data16[4];
+      uint8_t                data8[8];
     };
   };
-} CANRxExtendedFilter;
+} FDCANExtendedFilter;
+
+
+/**
+ * @brief   CAN filter.
+ * @note    Refer to the STM32 reference manual for info about filters.
+ *          To use BxCAN backward compatible filtering API; less powerfull
+ *          but portable among STM32 families
+ */
+typedef struct {
+  /**
+   * @brief   Number of the filter bank to be programmed.
+   */
+  uint32_t                  filter:16;
+  /**
+   * @brief   Filter mode.
+   * @note    This bit represent the CAN_FM1R register bit associated to this
+   *          filter (0=mask mode, 1=list mode).
+   */
+  uint32_t                  mode:1;
+  /**
+   * @brief   Filter scale.
+   * @note    This bit represent the CAN_FS1R register bit associated to this
+   *          filter (0=16 bits mode, 1=32 bits mode).
+   */
+  uint32_t                  scale:1;
+  /**
+   * @brief   Filter mode.
+   * @note    This bit represent the CAN_FFA1R register bit associated to this
+   */
+  uint32_t                  assignment:1;
+  /**
+   * @brief   Filter register 1 (identifier).
+   */
+  uint32_t                  register1;
+  /**
+   * @brief   Filter register 2 (mask/identifier depending on mode=0/1).
+   */
+  uint32_t                  register2;
+} CANFilter;
+
 
 /**
  * @brief   Type of a CAN configuration structure.
  */
 typedef struct hal_can_config {
+  /**
+   * @brief Specifies the FDCAN operation mode.
+   */
+  fdcanopmode_t             op_mode;
   /**
    * @brief   Nominal bit timing and prescaler register.
    */
@@ -402,11 +551,7 @@ typedef struct hal_can_config {
   /**
    * @brief   Global filter configuration register.
    */
-#if !defined  (STM32H7)
   uint32_t                  RXGFC;
-#else
-  uint32_t                  GFC;
-#endif
 } CANConfig;
 
 /**
@@ -500,6 +645,10 @@ struct hal_can_driver {
 #endif
   /* End of the mandatory fields.*/
   /**
+   * @brief   Element size (RAM words).
+   */
+  wordsize_t                word_size;
+  /**
    * @brief   Pointer to the CAN registers.
    */
   FDCAN_GlobalTypeDef       *fdcan;
@@ -550,8 +699,17 @@ extern "C" {
   void can_lld_wakeup(CANDriver *canp);
 #endif /* CAN_USE_SLEEP_MODE */
   void can_lld_serve_interrupt(CANDriver *canp);
+  void canSTM32SetStandardFilters(CANDriver *canp,
+				  uint32_t num, 
+				  const FDCANStandardFilter *crsfp);
+  void canSTM32SetExtendedFilters(CANDriver *canp,
+				  uint32_t num, 
+				  const FDCANExtendedFilter *crefp);
+  void canSTM32SetFilters(CANDriver *canp, uint32_t,
+			  uint32_t num, const CANFilter *cfp);
+
 #ifdef __cplusplus
-}
+ } 
 #endif
 
 #endif /* HAL_USE_CAN */
