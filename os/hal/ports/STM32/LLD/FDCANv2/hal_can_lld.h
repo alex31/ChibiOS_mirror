@@ -95,8 +95,8 @@
 #define CAN_IDE_EXT                 1           /**< @brief Extended id.    */
 #define CAN_FILTER_MODE_MASK	    0U          /**< @brief id+mask filter  */
 #define CAN_FILTER_MODE_ID 	    1U          /**< @brief two id filter   */
-#define CAN_FILTER_FIFO_ASSIGN_1    0U          /**< @brief out to fifo1    */
-#define CAN_FILTER_FIFO_ASSIGN_2    1U          /**< @brief out to fifo2    */
+#define CAN_FILTER_FIFO_ASSIGN_0    0U          /**< @brief out to fifo1    */
+#define CAN_FILTER_FIFO_ASSIGN_1    1U          /**< @brief out to fifo2    */
 
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */

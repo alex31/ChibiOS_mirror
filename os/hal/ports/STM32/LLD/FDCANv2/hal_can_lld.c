@@ -747,8 +747,8 @@ static void  can_set_std_from_bx(const CANFilter *cfp, FDCANStandardFilter *crsf
     .SFID2 = cfp->register2 >> 3,
     ._R1 = 0,
     .SFID1 = cfp->register1 >> 3,
-    .SFEC = cfp->assignment == CAN_FILTER_FIFO_ASSIGN_1 ?
-                               FILTERING_FEC_FIFO_1 :  FILTERING_FEC_FIFO_0,
+    .SFEC = cfp->assignment == CAN_FILTER_FIFO_ASSIGN_0 ?
+                               FILTERING_FEC_FIFO_0 :  FILTERING_FEC_FIFO_1,
     .SFT = cfp->mode == CAN_FILTER_MODE_ID ?
                         FILTERING_FT_DUALID : FILTERING_FT_MASK
   };
@@ -766,8 +766,8 @@ static void  can_set_std_from_bx(const CANFilter *cfp, FDCANStandardFilter *crsf
 static void  can_set_ext_from_bx(const CANFilter *cfp, FDCANExtendedFilter *crefp) {
    *crefp = (FDCANExtendedFilter) {
     .EFID1 = cfp->register1 >> 3,
-    .EFEC = cfp->assignment == CAN_FILTER_FIFO_ASSIGN_1 ?
-                               FILTERING_FEC_FIFO_1 :  FILTERING_FEC_FIFO_0,
+    .EFEC = cfp->assignment == CAN_FILTER_FIFO_ASSIGN_0 ?
+                               FILTERING_FEC_FIFO_0 :  FILTERING_FEC_FIFO_1,
     .EFID2 = cfp->register2 >> 3,
     ._R1 = 0,
     .EFT = cfp->mode == CAN_FILTER_MODE_ID ?
@@ -824,7 +824,7 @@ void canSTM32SetFilters(CANDriver *canp, uint32_t,
 			uint32_t num, const CANFilter *cfp) {
   // find out number of standard and extended ID filters
   uint32_t filters_nb[2] = {0}; // STD, EXT
-  for(unsigned i = 0U; i < num; i++) {
+  for (unsigned i = 0U; i < num; i++) {
     filters_nb[cfp[i].scale]++;
   }
   // start with standard filters
@@ -832,9 +832,11 @@ void canSTM32SetFilters(CANDriver *canp, uint32_t,
     // allocate room for standard filters on the stack
     FDCANStandardFilter crsf[filters_nb[CAN_IDE_STD]] = {};
     uint32_t fdcan_filter_index = 0;
-    for (unsigned i = 0U; i < num; i++) 
-      if (cfp[i].scale == CAN_IDE_STD) 
+    for (unsigned i = 0U; i < num; i++) {
+      if (cfp[i].scale == CAN_IDE_STD) {
 	can_set_std_from_bx(&cfp[i], &crsf[fdcan_filter_index++]);
+      }
+    }
     can_lld_set_standard_filters(canp, filters_nb[CAN_IDE_EXT], crsf);
   }
 
@@ -843,9 +845,11 @@ void canSTM32SetFilters(CANDriver *canp, uint32_t,
     // allocate room for extended filters on the stack
      FDCANExtendedFilter cref[filters_nb[CAN_IDE_EXT]] = {};;
      uint32_t fdcan_filter_index = 0;
-     for (unsigned i = 0U; i < num; i++)
-       if (cfp[i].scale == CAN_IDE_EXT)
+     for (unsigned i = 0U; i < num; i++) {
+       if (cfp[i].scale == CAN_IDE_EXT) {
 	 can_set_ext_from_bx(&cfp[i], &cref[fdcan_filter_index++]);
+       }
+     }
      can_lld_set_extended_filters(canp, filters_nb[CAN_IDE_EXT], cref);
    }
 }
