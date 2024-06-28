@@ -74,7 +74,8 @@ CANDriver CAND3;
  *                      a default filter is programmed
  * @param[in] cfp       pointer to the filters array, can be @p NULL if
  *                      (num == 0)
- *
+*  @param[in] call_before_start       set this to true if the function is called before
+ *                      starting the driver : only for compatibility purpose
  * @notapi
  */
 static void can_lld_set_filters(CANDriver* canp,
