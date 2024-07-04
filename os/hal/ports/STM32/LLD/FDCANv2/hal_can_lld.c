@@ -395,7 +395,8 @@ bool can_lld_start(CANDriver *canp) {
   canp->fdcan->IR     = (uint32_t)-1;
   canp->fdcan->IE     = FDCAN_IE_RF1FE | FDCAN_IE_RF1LE |
                         FDCAN_IE_RF0FE | FDCAN_IE_RF0LE |
-                        FDCAN_IE_TCE;
+                        FDCAN_IE_TCE   | FDCAN_IE_PEAE  |
+                        FDCAN_IE_PEDE;
   canp->fdcan->TXBTIE = FDCAN_TXBTIE_TIE;
   canp->fdcan->ILE    = FDCAN_ILE_EINT0;
 
@@ -600,8 +601,8 @@ void can_lld_receive(CANDriver *canp, canmbx_t mailbox, CANRxFrame *crfp) {
  */
 void can_lld_abort(CANDriver *canp, canmbx_t mailbox) {
 
-  (void)canp;
   (void)mailbox;
+  canp->fdcan->TXBCR = canp->fdcan->TXBRP;
 }
 
 #if CAN_USE_SLEEP_MODE || defined(__DOXYGEN__)
@@ -667,6 +668,9 @@ void can_lld_serve_interrupt(CANDriver *canp) {
 
     flags |= 1U;
     _can_tx_empty_isr(canp, flags);
+  }
+  if (((ir & FDCAN_IR_PEA) != 0U) || ((ir & FDCAN_IR_PED) != 0U)) {
+    _can_error_isr(canp, CAN_FRAMING_ERROR);
   }
 }
 
