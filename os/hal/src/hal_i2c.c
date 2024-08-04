@@ -186,9 +186,9 @@ i2cflags_t i2cGetErrors(I2CDriver *i2cp) {
  */
 msg_t i2cMasterTransmitTimeout(I2CDriver *i2cp,
                                i2caddr_t addr,
-                               const uint8_t *txbuf,
+                               const void *txbuf,
                                size_t txbytes,
-                               uint8_t *rxbuf,
+                               void *rxbuf,
                                size_t rxbytes,
                                sysinterval_t timeout) {
   msg_t rdymsg;
@@ -237,7 +237,7 @@ msg_t i2cMasterTransmitTimeout(I2CDriver *i2cp,
  */
 msg_t i2cMasterReceiveTimeout(I2CDriver *i2cp,
                               i2caddr_t addr,
-                              uint8_t *rxbuf,
+                              void *rxbuf,
                               size_t rxbytes,
                               sysinterval_t timeout) {
 
@@ -347,7 +347,7 @@ msg_t i2cSlaveMatchAddress(I2CDriver *i2cp, i2caddr_t addr) {
  * @api
  */
 msg_t i2cSlaveReceiveTimeout(I2CDriver *i2cp,
-                             uint8_t *rxbuf,
+                             void *rxbuf,
                              size_t rxbytes,
                              sysinterval_t timeout) {
   msg_t rdymsg;
@@ -399,7 +399,7 @@ msg_t i2cSlaveReceiveTimeout(I2CDriver *i2cp,
  * @api
  */
 msg_t i2cSlaveTransmitTimeout(I2CDriver *i2cp,
-                               const uint8_t *txbuf,
+                               const void *txbuf,
                                size_t txbytes,
                                sysinterval_t timeout){
   msg_t rdymsg;

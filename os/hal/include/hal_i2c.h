@@ -151,15 +151,15 @@ extern "C" {
   __attribute__((access (write_only, 5, 6), access (read_only,  3, 4)))
   msg_t i2cMasterTransmitTimeout(I2CDriver *i2cp,
                                  i2caddr_t addr,
-                                 const uint8_t *txbuf, size_t txbytes,
-                                 uint8_t *rxbuf, size_t rxbytes,
+                                 const void *txbuf, size_t txbytes,
+                                 void *rxbuf, size_t rxbytes,
                                  sysinterval_t timeout);
 
   [[nodiscard]]
   __attribute__((access (write_only, 3, 4)))
   msg_t i2cMasterReceiveTimeout(I2CDriver *i2cp,
                                 i2caddr_t addr,
-                                uint8_t *rxbuf, size_t rxbytes,
+                                void *rxbuf, size_t rxbytes,
                                 sysinterval_t timeout);
 #if I2C_USE_MUTUAL_EXCLUSION == TRUE
   void i2cAcquireBus(I2CDriver *i2cp);
@@ -170,11 +170,11 @@ extern "C" {
   msg_t i2cSlaveMatchAddress(I2CDriver *i2cp, i2caddr_t  i2cadr);
   [[nodiscard]]
   __attribute__((access (write_only, 3, 4)))
-  msg_t i2cSlaveReceiveTimeout(I2CDriver *i2cp, uint8_t *rxbuf,
+  msg_t i2cSlaveReceiveTimeout(I2CDriver *i2cp, void *rxbuf,
                                size_t rxbytes, sysinterval_t timeout);
   [[nodiscard]]
   __attribute__((access (read_only, 3, 4)))
-  msg_t i2cSlaveTransmitTimeout(I2CDriver *i2cp, const uint8_t *txbuf,
+  msg_t i2cSlaveTransmitTimeout(I2CDriver *i2cp, const void *txbuf,
                                 size_t txbytes, sysinterval_t timeout);
 #endif
 #ifdef __cplusplus
