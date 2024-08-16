@@ -406,6 +406,7 @@ void chSysTimerHandlerI(void) {
   CH_CFG_SYSTEM_TICK_HOOK();
 }
 
+#if (CH_PORT_SUPPORTS_RECURSIVE_LOCKS == TRUE) || defined(__DOXYGEN__)
 /**
  * @brief   Returns the execution status and enters a critical zone.
  * @details This functions enters into a critical zone and can be called
@@ -413,6 +414,8 @@ void chSysTimerHandlerI(void) {
  *          than @p chSysLock() which is preferable when the calling context
  *          is known.
  * @post    The system is in a critical zone.
+ * @note    This function is only available if the underlying port supports
+ *          @p port_get_lock_status() and @p port_is_locked().
  *
  * @return              The previous system status, the encoding of this
  *                      status word is architecture-dependent and opaque.
@@ -421,8 +424,8 @@ void chSysTimerHandlerI(void) {
  */
 syssts_t chSysGetStatusAndLockX(void) {
 
-  syssts_t sts = port_get_irq_status();
-  if (port_irq_enabled(sts)) {
+  syssts_t sts = port_get_lock_status();
+  if (!port_is_locked(sts)) {
     if (port_is_isr_context()) {
       chSysLockFromISR();
     }
@@ -437,6 +440,8 @@ syssts_t chSysGetStatusAndLockX(void) {
  * @brief   Restores the specified execution status and leaves a critical zone.
  * @note    A call to @p chSchRescheduleS() is automatically performed
  *          if exiting the critical zone and if not in ISR context.
+ * @note    This function is only available if the underlying port supports
+ *          @p port_get_lock_status() and @p port_is_locked().
  *
  * @param[in] sts       the system status to be restored.
  *
@@ -444,7 +449,7 @@ syssts_t chSysGetStatusAndLockX(void) {
  */
 void chSysRestoreStatusX(syssts_t sts) {
 
-  if (port_irq_enabled(sts)) {
+  if (!port_is_locked(sts)) {
     if (port_is_isr_context()) {
       chSysUnlockFromISR();
     }
@@ -454,6 +459,7 @@ void chSysRestoreStatusX(syssts_t sts) {
     }
   }
 }
+#endif /* CH_PORT_SUPPORTS_RECURSIVE_LOCKS == TRUE */
 
 #if (PORT_SUPPORTS_RT == TRUE) || defined(__DOXYGEN__)
 /**

@@ -131,6 +131,7 @@
 #define STM32_HAS_FDCAN1                    TRUE
 #define STM32_HAS_FDCAN2                    TRUE
 #define STM32_HAS_FDCAN3                    FALSE
+
 #define STM32_FDCAN_SHARED_MEMORY_SIZE      2560U
 #if (STM32_CAN_USE_FDCAN1 && STM32_CAN_USE_FDCAN2)
 #define STM32_FDCAN_FLS_NBR                 32U
@@ -153,6 +154,7 @@
 #define STM32_FDCAN_TM_NBR                  32U
 #define STM32_FDCAN_INTERFACE_NBR	     1U
 #endif
+
 
 /* DAC attributes.*/
 #define STM32_HAS_DAC1_CH1                  TRUE
@@ -383,6 +385,7 @@
 #define STM32_HAS_FDCAN1                    TRUE
 #define STM32_HAS_FDCAN2                    TRUE
 #define STM32_HAS_FDCAN3                    TRUE
+
 #define STM32_FDCAN_SHARED_MEMORY_SIZE      2560U
 #if (STM32_CAN_USE_FDCAN1 && STM32_CAN_USE_FDCAN2 && STM32_CAN_USE_FDCAN3)
 #define STM32_FDCAN_FLS_NBR                 21U
@@ -648,6 +651,7 @@
 #define STM32_HAS_FDCAN1                    TRUE
 #define STM32_HAS_FDCAN2                    TRUE
 #define STM32_HAS_FDCAN3                    FALSE
+
 #define STM32_FDCAN_SHARED_MEMORY_SIZE      2560U
 #if (STM32_CAN_USE_FDCAN1 && STM32_CAN_USE_FDCAN2)
 #define STM32_FDCAN_FLS_NBR                 21U
@@ -679,6 +683,7 @@
 #define STM32_FDCAN_TEF_NBR                 32U
 #define STM32_FDCAN_TB_NBR                  32U
 #define STM32_FDCAN_TM_NBR                  64U
+
 
 /* DAC attributes.*/
 #define STM32_HAS_DAC1_CH1                  TRUE
@@ -907,6 +912,7 @@
 #define STM32_HAS_FDCAN1                    TRUE
 #define STM32_HAS_FDCAN2                    TRUE
 #define STM32_HAS_FDCAN3                    FALSE
+
 #define STM32_FDCAN_SHARED_MEMORY_SIZE      2560U
 #if (STM32_CAN_USE_FDCAN1 && STM32_CAN_USE_FDCAN2)
 #define STM32_FDCAN_FLS_NBR                 32U
@@ -929,6 +935,7 @@
 #define STM32_FDCAN_TM_NBR                  32U
 #define STM32_FDCAN_INTERFACE_NBR	     1U
 #endif
+
 
 /* DAC attributes.*/
 #define STM32_HAS_DAC1_CH1                  TRUE
