@@ -39,13 +39,14 @@
 #define EP0_MAX_OUTSIZE         64
 
 /** @brief Enables delay in ULPI timing during device chirp.*/
-#define USB_OTG_DCFG_XCVRDLY	(1 << 14)
+#define USB_OTG_DCFG_XCVRDLY    (1U << 14)
+
 
 /** 
   * @brief some ULPI chip need additional delay for initial handshake, 
   *        namely microchip 334x series.
   */
-#ifdef BOARD_OTG2_ULPI_ACTIVATE_CHIRP_DELAY
+#if defined(BOARD_OTG2_ULPI_ACTIVATE_CHIRP_DELAY)
 #define BOARD_OTG2_ULPI_CHIRP_DELAY_MASK USB_OTG_DCFG_XCVRDLY
 #else
 #define BOARD_OTG2_ULPI_CHIRP_DELAY_MASK 0
