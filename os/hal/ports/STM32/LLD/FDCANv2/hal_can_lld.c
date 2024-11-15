@@ -800,8 +800,12 @@ void can_lld_serve_interrupt(CANDriver *canp) {
     flags |= 1U;
     _can_tx_empty_isr(canp, flags);
   }
+  
   if (((ir & FDCAN_IR_PEA) != 0U) || ((ir & FDCAN_IR_PED) != 0U)) {
     _can_error_isr(canp, CAN_FRAMING_ERROR);
+  }
+  if (canp->fdcan->CCCR & FDCAN_CCCR_INIT) {
+    _can_error_isr(canp, CAN_BUS_OFF_ERROR);
   }
 }
 
