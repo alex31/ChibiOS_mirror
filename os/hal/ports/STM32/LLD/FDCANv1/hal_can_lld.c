@@ -295,8 +295,8 @@ bool can_lld_start(CANDriver *canp) {
   }
 
   /* Configure number of extended/standard Message ID filter elements */
-  canp->fdcan->RXGFC = FDCAN_CONFIG_RXGFC_LSS(STM32_FDCAN_FLS_NBR) |
-                       FDCAN_CONFIG_RXGFC_LSE(STM32_FDCAN_FLE_NBR);
+  canp->fdcan->RXGFC = FDCAN_CONFIG_RXGFC_LSS(0) | /*STM32_FDCAN_FLS_NBR*/
+		       FDCAN_CONFIG_RXGFC_LSE(0); /* STM32_FDCAN_FLE_NBR*/
   canp->fdcan->RXGFC |= canp->config->RXGFC;
 
   /* Start clock and disable configuration mode.*/
@@ -614,6 +614,12 @@ void can_lld_set_filters(CANDriver *canp, uint8_t num, const CANFilter *cfp) {
   CANRxStandardFilter *filter_std;
   CANRxExtendedFilter *filter_ext;
 
+  if (fdcan_init_mode(canp)) {
+    osalDbgAssert(false, "CAN initialization failed, check clocks and pin config");
+    return;
+  }
+  canp->fdcan->CCCR |= FDCAN_CCCR_CCE;
+
   /* Check number of filters. */
   for (i = 0; i < num; i++) {
     if ((cfp[i].filter_type) == CAN_FILTER_TYPE_STD) {
@@ -655,6 +661,16 @@ void can_lld_set_filters(CANDriver *canp, uint8_t num, const CANFilter *cfp) {
       filter_ext++;
     }
   }
+  canp->fdcan->RXGFC = ((canp->fdcan->RXGFC &
+			 ~(FDCAN_CONFIG_RXGFC_LSS_Msk | FDCAN_CONFIG_RXGFC_LSE_Msk)) |
+			FDCAN_CONFIG_RXGFC_LSS(num_std_filter) |
+			FDCAN_CONFIG_RXGFC_LSE(num_ext_filter)
+			); 
+  
+  if (fdcan_active_mode(canp)) {
+    osalDbgAssert(false, "CAN initialization failed, check clocks and pin config");
+  }
+  
 }
 /**
  * @brief   Programs the filters.
