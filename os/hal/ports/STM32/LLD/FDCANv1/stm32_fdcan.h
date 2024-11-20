@@ -72,7 +72,6 @@
  */
 #define FDCAN_CONFIG_CCCR_DAR            (1u << 6)
 #define FDCAN_CONFIG_CCCR_TEST_MODE      (1u << 7)
-#define FDCAN_CONFIG_CCCR_CAN_MODE       (0u << 8)
 #define FDCAN_CONFIG_CCCR_FDCAN_MODE     (1u << 8)
 #define FDCAN_CONFIG_CCCR_BRSE           (1u << 9)
 #define FDCAN_CONFIG_CCCR_NISO           (1u << 15)
@@ -90,39 +89,100 @@
 /** @} */
 
 /**
- * @name    RXGFC register additional macros
+ * @name    RXGFC) register additional macros
  * @{
  */
 #define FDCAN_CONFIG_RXGFC_RRFE            (1u << 0)
 #define FDCAN_CONFIG_RXGFC_RRFS            (1u << 1)
-#define FDCAN_CONFIG_RXGFC_ANFE_Pos        (2u)
+#define FDCAN_CONFIG_RXGFC_ANFE_Pos        (2)
 #define FDCAN_CONFIG_RXGFC_ANFE_Msk        (0x3u << FDCAN_CONFIG_RXGFC_ANFE_Pos)
 #define FDCAN_CONFIG_RXGFC_ANFE(n)         ((FDCAN_CONFIG_RXGFC_ANFE_Msk & ((n) << FDCAN_CONFIG_RXGFC_ANFE_Pos)))
-#define   FDCAN_CONFIG_RXGFC_ANFE_RX_0     FDCAN_CONFIG_RXGFC_ANFE(0u) 
-#define   FDCAN_CONFIG_RXGFC_ANFE_RX_1     FDCAN_CONFIG_RXGFC_ANFE(1u)
-#define   FDCAN_CONFIG_RXGFC_ANFE_REJECT   FDCAN_CONFIG_RXGFC_ANFE(2u)
-
-#define FDCAN_CONFIG_RXGFC_ANFS_Pos        (4u)
+#define   FDCAN_CONFIG_RXGFC_ANFE_RX_0     (0x0u << 2)
+#define   FDCAN_CONFIG_RXGFC_ANFE_RX_1     (0x1u << 2)
+#define   FDCAN_CONFIG_RXGFC_ANFE_REJECT   (0x2u << 2)
+#define FDCAN_CONFIG_RXGFC_ANFS_Pos        (4)
 #define FDCAN_CONFIG_RXGFC_ANFS_Msk        (0x3u << FDCAN_CONFIG_RXGFC_ANFS_Pos)
 #define FDCAN_CONFIG_RXGFC_ANFS(n)         ((FDCAN_CONFIG_RXGFC_ANFS_Msk & ((n) << FDCAN_CONFIG_RXGFC_ANFS_Pos)))
-#define   FDCAN_CONFIG_RXGFC_ANFS_RX_0     FDCAN_CONFIG_RXGFC_ANFS(0u)
-#define   FDCAN_CONFIG_RXGFC_ANFS_RX_1     FDCAN_CONFIG_RXGFC_ANFS(1u)
-#define   FDCAN_CONFIG_RXGFC_ANFS_REJECT   FDCAN_CONFIG_RXGFC_ANFS(2u)
-
-#define FDCAN_CONFIG_RXGFC_LSS_Pos        (16)
-#define FDCAN_CONFIG_RXGFC_LSS_Msk        (0x1Fu << FDCAN_CONFIG_RXGFC_LSS_Pos)
-#define FDCAN_CONFIG_RXGFC_LSS(n)         ((FDCAN_CONFIG_RXGFC_LSS_Msk & ((n) << FDCAN_CONFIG_RXGFC_LSS_Pos)))
-
-#define FDCAN_CONFIG_RXGFC_LSE_Pos        (24)
-#define FDCAN_CONFIG_RXGFC_LSE_Msk        (0xFu << FDCAN_CONFIG_RXGFC_LSE_Pos)
-#define FDCAN_CONFIG_RXGFC_LSE(n)         ((FDCAN_CONFIG_RXGFC_LSE_Msk & ((n) << FDCAN_CONFIG_RXGFC_LSE_Pos)))
-
-
+#define   FDCAN_CONFIG_RXGFC_ANFS_RX_0     (0x0u << 4)
+#define   FDCAN_CONFIG_RXGFC_ANFS_RX_1     (0x1u << 4)
+#define   FDCAN_CONFIG_RXGFC_ANFS_REJECT   (0x2u << 4)
+#define FDCAN_CONFIG_RXGFC_F1OM            (1u << 8)
+#define FDCAN_CONFIG_RXGFC_F0OM            (1u << 9)
+#define FDCAN_CONFIG_RXGFC_LSS_Pos         (16)
+#define FDCAN_CONFIG_RXGFC_LSS_Msk         (0x1Fu << FDCAN_CONFIG_RXGFC_LSS_Pos)
+#define FDCAN_CONFIG_RXGFC_LSS(n)          ((FDCAN_CONFIG_RXGFC_LSS_Msk & ((n) << FDCAN_CONFIG_RXGFC_LSS_Pos)))
+#define FDCAN_CONFIG_RXGFC_LSE_Pos         (24)
+#define FDCAN_CONFIG_RXGFC_LSE_Msk         (0xFu << FDCAN_CONFIG_RXGFC_LSE_Pos)
+#define FDCAN_CONFIG_RXGFC_LSE(n)          ((FDCAN_CONFIG_RXGFC_LSE_Msk & ((n) << FDCAN_CONFIG_RXGFC_LSE_Pos)))
 /** @} */
 
+/**
+ * @name    TXBC register additional macros
+ * @{
+ */
+#define FDCAN_CONFIG_TXBC_TFQM            (1u << 24)
+/** @} */
 
+/**
+ * @name    TXBC register additional macros
+ * @{
+ */
+#define FDCAN_CONFIG_CKDIV_PDIV_Pos        (0)
+#define FDCAN_CONFIG_CKDIV_PDIV_Msk        (0xFu << FDCAN_CONFIG_CKDIV_PDIV_Pos)
+#define FDCAN_CONFIG_CKDIV_PDIV(n)         ((FDCAN_CONFIG_CKDIV_PDIV_Msk & ((n) << FDCAN_CONFIG_CKDIV_PDIV_Pos)))
+#define   FDCAN_CONFIG_CKDIV_PDIV_1        (0x0u << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_2        (0x1u << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_4        (0x2u << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_6        (0x3u << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_8        (0x4u << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_10       (0x5u << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_12       (0x6u << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_14       (0x7u << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_16       (0x8u << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_18       (0x9u << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_20       (0xAu << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_22       (0xBu << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_24       (0xCu << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_26       (0xDu << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_28       (0xEu << 0)
+#define   FDCAN_CONFIG_CKDIV_PDIV_30       (0xFu << 0)
+/** @} */
 
+/**
+ * @name    FDCAN standard message ID filter element help macros.
+ * @{
+ */
+#define FDCAN_STD_FILTER_SFID2_Pos         (0)
+#define FDCAN_STD_FILTER_SFID2_Msk         (0x7FFu << FDCAN_STD_FILTER_SFID2_Pos)
+#define FDCAN_STD_FILTER_SFID2(n)          ((FDCAN_STD_FILTER_SFID2_Msk & ((n) << FDCAN_STD_FILTER_SFID2_Pos)))
+#define FDCAN_STD_FILTER_SFID1_Pos         (16)
+#define FDCAN_STD_FILTER_SFID1_Msk         (0x7FFu << FDCAN_STD_FILTER_SFID1_Pos)
+#define FDCAN_STD_FILTER_SFID1(n)          ((FDCAN_STD_FILTER_SFID1_Msk & ((n) << FDCAN_STD_FILTER_SFID1_Pos)))
+#define FDCAN_STD_FILTER_SFEC_Pos          (27)
+#define FDCAN_STD_FILTER_SFEC_Msk          (0x7u << FDCAN_STD_FILTER_SFEC_Pos)
+#define FDCAN_STD_FILTER_SFEC(n)           ((FDCAN_STD_FILTER_SFEC_Msk & ((n) << FDCAN_STD_FILTER_SFEC_Pos)))
+#define FDCAN_STD_FILTER_SFT_Pos           (30)
+#define FDCAN_STD_FILTER_SFT_Msk           (0x3u << FDCAN_STD_FILTER_SFT_Pos)
+#define FDCAN_STD_FILTER_SFT(n)            ((FDCAN_STD_FILTER_SFT_Msk & ((n) << FDCAN_STD_FILTER_SFT_Pos)))
+/** @} */
 
+/**
+ * @name    FDCAN Extended message ID filter element help macros.
+ * @{
+ */
+#define FDCAN_EXT_FILTER_EFID1_Pos         (0)
+#define FDCAN_EXT_FILTER_EFID1_Msk         (0x1FFFFFFFu << FDCAN_EXT_FILTER_EFID1_Pos)
+#define FDCAN_EXT_FILTER_EFID1(n)          ((FDCAN_EXT_FILTER_EFID1_Msk & ((n) << FDCAN_EXT_FILTER_EFID1_Pos)))
+#define FDCAN_EXT_FILTER_EFEC_Pos          (29)
+#define FDCAN_EXT_FILTER_EFEC_Msk          (0x7u << FDCAN_EXT_FILTER_EFEC_Pos)
+#define FDCAN_EXT_FILTER_EFEC(n)           ((FDCAN_EXT_FILTER_EFEC_Msk & ((n) << FDCAN_EXT_FILTER_EFEC_Pos)))
+#define FDCAN_EXT_FILTER_EFID2_Pos         (0)
+#define FDCAN_EXT_FILTER_EFID2_Msk         (0x1FFFFFFFu << FDCAN_EXT_FILTER_EFID2_Pos)
+#define FDCAN_EXT_FILTER_EFID2(n)          ((FDCAN_EXT_FILTER_EFID2_Msk & ((n) << FDCAN_EXT_FILTER_EFID2_Pos)))
+#define FDCAN_EXT_FILTER_EFT_Pos           (30)
+#define FDCAN_EXT_FILTER_EFT_Msk           (0x2u << FDCAN_EXT_FILTER_EFT_Pos)
+#define FDCAN_EXT_FILTER_EFT(n)            ((FDCAN_EXT_FILTER_EFT_Msk & ((n) << FDCAN_EXT_FILTER_EFT_Pos)))
+/** @} */
 
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
