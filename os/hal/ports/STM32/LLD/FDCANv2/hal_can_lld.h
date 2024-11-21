@@ -88,16 +88,6 @@
 #define FDCAN_14DLC_TO_BYTES        48U
 #define FDCAN_15DLC_TO_BYTES        64U
 
-/**
- * @brief   for use on BXCan comptatible legacy filtering API
- */
-#define CAN_IDE_STD                 0           /**< @brief Standard id.    */
-#define CAN_IDE_EXT                 1           /**< @brief Extended id.    */
-#define CAN_FILTER_MODE_MASK	    0U          /**< @brief id+mask filter  */
-#define CAN_FILTER_MODE_ID 	    1U          /**< @brief two id filter   */
-#define CAN_FILTER_FIFO_ASSIGN_0    0U          /**< @brief out to fifo1    */
-#define CAN_FILTER_FIFO_ASSIGN_1    1U          /**< @brief out to fifo2    */
-
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
 /*===========================================================================*/
@@ -175,27 +165,6 @@ typedef enum {
   OPMODE_FDCAN = 1,
   OPMODE_CAN = 2
 } fdcanopmode_t;
-
-/**
- * @brief   Supported filtering modes for the peripheral FDCAN.
- */
-typedef enum {
-  FILTERING_FT_RANGE, 
-  FILTERING_FT_DUALID, 
-  FILTERING_FT_MASK, 
-  FILTERING_FT_DISABLE
-} fdcanfilter_t;
-
-typedef enum {
-  FILTERING_FEC_DISABLE,
-  FILTERING_FEC_FIFO_0,
-  FILTERING_FEC_FIFO_1,
-  FILTERING_FEC_REJECT,
-  FILTERING_FEC_PRIORITY,
-  FILTERING_FEC_PRIORITY_FIFO_0,
-  FILTERING_FEC_PRIORITY_FIFO_1,
-  FILTERING_FEC_RXBUFFER
-} fdcanfilterdisplatch_t;
 
 /**
  * @brief   Convert DLC in BYTES.
@@ -350,19 +319,19 @@ typedef struct {
 typedef struct {
   union {
     struct {
-      uint16_t               SFID2:11;
-      uint8_t                _R1:5;
-      uint16_t               SFID1:11;
-      fdcanfilterdisplatch_t SFEC:3;
-      fdcanfilter_t         SFT:2;
+      uint16_t              SFID2:11;
+      uint8_t               _R1:5;
+      uint16_t              SFID1:11;
+      uint8_t               SFEC:3;
+      uint8_t               SFT:2;
     };
     union {
-      uint32_t               data32;
-      uint16_t               data16[2];
-      uint8_t                data8[4];
+      uint32_t              data32;
+      uint16_t              data16[2];
+      uint8_t               data8[4];
     };
   };
-} FDCANStandardFilter;
+} CANRxStandardFilter;
 
 /**
  * @brief   CAN extended filter.
@@ -373,61 +342,91 @@ typedef struct {
 typedef struct {
   union {
     struct {
-      uint32_t               EFID1:29;
-      fdcanfilterdisplatch_t EFEC:3;
-      uint32_t               EFID2:29;
-      uint8_t                _R1:1;
-      fdcanfilter_t          EFT:2;
+      uint32_t              EFID1:29;
+      uint8_t               EFEC:3;
+      uint32_t              EFID2:29;
+      uint8_t               _R1:1;
+      uint8_t               EFT:2;
     };
     union {
-      uint32_t               data32[2];
-      uint16_t               data16[4];
-      uint8_t                data8[8];
+      uint32_t              data32[2];
+      uint16_t              data16[4];
+      uint8_t               data8[8];
     };
   };
-} FDCANExtendedFilter;
-
-
+} CANRxExtendedFilter;
 
 /**
- * @brief   CAN filter.
+ * @brief   Filter type element.
+ */
+typedef enum {
+  CAN_FILTER_TYPE_STD = 0x00,         /**< Standard filter */
+  CAN_FILTER_TYPE_EXT = 0x01          /**< Extended filter */
+} filter_type_t;
+
+/**
+ * @brief   Filter mode.
+ */
+typedef enum {
+  CAN_FILTER_MODE_RANGE = 0x00,       /**< Range filter from SFID1 to SFID2 */
+  CAN_FILTER_MODE_DUAL = 0x01,        /**< Dual ID filter for SFID1 or SFID2 */
+  CAN_FILTER_MODE_CLASSIC = 0x02      /**< Classic filter: SFID1 = filter, SFID2 = mask */
+} filter_mode_t;
+
+/**
+ * @brief   Filter configuration.
+ */
+typedef enum {
+  CAN_FILTER_CFG_FIFO_0 = 0x01,       /**< Store in Rx FIFO 0 if filter matches */
+  CAN_FILTER_CFG_FIFO_1 = 0x02,       /**< Store in Rx FIFO 1 if filter matches */
+  CAN_FILTER_CFG_REJECT = 0x03        /**< Reject ID if filter matches in range FID1-FID2 */
+} filter_cfg_t;
+
+/**
+ * @brief   CAN filter configuration.
  * @note    Refer to the STM32 reference manual for info about filters.
- *          To use BxCAN backward compatible filtering API; less powerfull
- *          but portable among STM32 families
  */
 typedef struct {
   /**
-   * @brief   Number of the filter bank to be programmed.
+   * @brief   Filter type;
+   * @note    Standard filter
+   *          Extended filter
    */
-  uint32_t                  filter:16;
+  filter_type_t             filter_type;
+
   /**
-   * @brief   Filter mode.
-   * @note    This bit represent the CAN_FM1R register bit associated to this
-   *          filter (0=mask mode, 1=list mode).
+   * @brief   Filter mode;
+   * @note    Field SFT / EFT;
+   * @note    Range filter from SFID1 to SFID2
+   *          Dual ID filter for SFID1 or SFID2
+   *          Classic filter: SFID1 = filter, SFID2 = mask
    */
-  uint32_t                  mode:1;
+  filter_mode_t             filter_mode;
+
   /**
-   * @brief   Filter scale.
-   * @note    This bit represent the CAN_FS1R register bit associated to this
-   *          filter (0=16 bits mode, 1=32 bits mode).
+   * @brief   Filter configuration;
+   * @note    Field SFEC / EFEC;
+   * @note    Store in Rx FIFO 0 if filter matches
+   *          Store in Rx FIFO 1 if filter matches
+   *          Reject ID if filter matches in range FID1-FID2
    */
-  uint32_t                  scale:1;
+  filter_cfg_t              filter_cfg;
+
   /**
-   * @brief   Filter mode.
-   * @note    This bit represent the CAN_FFA1R register bit associated to this
+   * @brief   Message address to filter.
+   * @note    29-bit Extended identifier.
+   *          11-bit Standard identifier.
    */
-  uint32_t                  assignment:1;
+  uint32_t                  identifier1;
+
   /**
-   * @brief   Filter register 1 (identifier).
+   * @brief   Message address to filter.
+   * @note    29-bit Extended identifier.
+   *          11-bit Standard identifier.
    */
-  uint32_t                  register1;
-  /**
-   * @brief   Filter register 2 (mask/identifier depending on mode=0/1).
-   */
-  uint32_t                  register2;
+  uint32_t                  identifier2;
+
 } CANFilter;
-
-
 
 /**
  * @brief   Type of a CAN configuration structure.
@@ -603,15 +602,8 @@ extern "C" {
   void can_lld_sleep(CANDriver *canp);
   void can_lld_wakeup(CANDriver *canp);
 #endif /* CAN_USE_SLEEP_MODE */
-void can_lld_serve_interrupt(CANDriver *canp);
-void canSTM32SetStandardFilters(CANDriver *canp,
-				uint32_t num, 
-				const FDCANStandardFilter *crsfp);
-void canSTM32SetExtendedFilters(CANDriver *canp,
-				uint32_t num, 
-				const FDCANExtendedFilter *crefp);
-void canSTM32SetFilters(CANDriver *canp, uint32_t can2sb,
-			uint32_t num, const CANFilter *cfp);
+  void can_lld_serve_interrupt(CANDriver *canp);
+  void canSTM32SetFilters(CANDriver *canp, uint8_t num, const CANFilter *cfp);
 #ifdef __cplusplus
 }
 #endif

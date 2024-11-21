@@ -26,6 +26,13 @@
 
 #if HAL_USE_CAN || defined(__DOXYGEN__)
 
+/*
+ * TODO
+ * The message received are stored only in RX FIFO 0 and RX FIFO 1, it depends on the configuration (GFC and SFEC/EFEC).
+ * With this revision of driver, the filter is always active (es. FDCAN_SIDFC.LSS > 0).
+ * The management of interrupt RX BUFFER (FDCAN_IR.DRX) is not implemented.
+ * */
+
 /*===========================================================================*/
 /* Driver local definitions.                                                 */
 /*===========================================================================*/
@@ -248,10 +255,6 @@
 #define TIMEOUT_INIT_MS                 250U
 #define TIMEOUT_CSA_MS                  250U
 
-
-_Static_assert((STM32_FDCAN_INTERFACE_NBR * SRAMCAN_SIZE) <= STM32_FDCAN_SHARED_MEMORY_SIZE,
-	       "CAN memory section overflow");
-
 /*===========================================================================*/
 /* Driver exported variables.                                                */
 /*===========================================================================*/
@@ -329,15 +332,6 @@ static bool fdcan_active_mode(CANDriver *canp) {
 
   return false;
 }
-
-static void can_lld_set_standard_filters(CANDriver *canp,
-					 uint32_t num,
-					 const FDCANStandardFilter *crefp);
-					 
-
-static void can_lld_set_extended_filters(CANDriver *canp,
-					 uint32_t num,
-					 const FDCANExtendedFilter *crefp);
 
 /*===========================================================================*/
 /* Driver interrupt handlers.                                                */
@@ -524,8 +518,8 @@ bool can_lld_start(CANDriver *canp) {
 
   /* Enabling interrupts, only using interrupt zero.*/
   canp->fdcan->IR     = (uint32_t)-1;
-  canp->fdcan->IE     = FDCAN_IE_RF1NE | FDCAN_IE_RF1LE |
-                        FDCAN_IE_RF0NE | FDCAN_IE_RF0LE |
+  canp->fdcan->IE     = FDCAN_IE_RF1FE | FDCAN_IE_RF1LE |
+                        FDCAN_IE_RF0FE | FDCAN_IE_RF0LE |
                         FDCAN_IE_TCE   | FDCAN_IE_PEAE  |
                         FDCAN_IE_PEDE;
   canp->fdcan->TXBTIE = FDCAN_TXBTIE_TIE;
@@ -602,9 +596,10 @@ void can_lld_transmit(CANDriver *canp, canmbx_t mailbox, const CANTxFrame *ctfp)
   osalDbgCheck(dlc_to_bytes[ctfp->DLC] <= CAN_MAX_DLC_BYTES);
 
   /* Retrieve the TX FIFO put index.*/
-  put_index = (canp->fdcan->TXFQS & FDCAN_TXFQS_TFQPI) >> FDCAN_TXFQS_TFQPI_Pos;
-  tx_address = canp->ram_base + (SRAMCAN_TBSA + (put_index * canp->word_size));
+  put_index = ((canp->fdcan->TXFQS & FDCAN_TXFQS_TFQPI) >> FDCAN_TXFQS_TFQPI_Pos);
 
+  /* Writing frame. */
+  tx_address = canp->ram_base + (SRAMCAN_TBSA + (put_index * canp->word_size));
 
   *tx_address++ = ctfp->header32[0];
   *tx_address++ = ctfp->header32[1];
@@ -613,16 +608,13 @@ void can_lld_transmit(CANDriver *canp, canmbx_t mailbox, const CANTxFrame *ctfp)
   }
 
   /* Starting transmission.*/
-  canp->fdcan->TXBAR = 1U << put_index;
+  canp->fdcan->TXBAR = ((uint32_t)1 << put_index);
   /*
    * FIXME This sleep not needed if we send two frames with different SID/EID
    *       why?
-   * 
    */
-  //chThdSleepS(OSAL_MS2I(1));
+  chThdSleepS(OSAL_MS2I(1));
 }
-
-
 
 /**
  * @brief   Determines whether a frame has been received.
@@ -705,8 +697,8 @@ void can_lld_receive(CANDriver *canp, canmbx_t mailbox, CANRxFrame *crfp) {
     canp->fdcan->RXF0A = rxf0a;
 
     if (!can_lld_is_rx_nonempty(canp, mailbox)) {
-      canp->fdcan->IR |= FDCAN_IR_RF0N;
-      canp->fdcan->IE |= FDCAN_IE_RF0NE;
+      canp->fdcan->IR |= FDCAN_IR_RF0F;
+      canp->fdcan->IE |= FDCAN_IE_RF0FE;
     }
   }
   else {
@@ -716,8 +708,8 @@ void can_lld_receive(CANDriver *canp, canmbx_t mailbox, CANRxFrame *crfp) {
     canp->fdcan->RXF1A = rxf1a;
 
     if (!can_lld_is_rx_nonempty(canp, mailbox)) {
-      canp->fdcan->IR |= FDCAN_IR_RF1N;
-      canp->fdcan->IE |= FDCAN_IE_RF1NE;
+      canp->fdcan->IR |= FDCAN_IR_RF1F;
+      canp->fdcan->IE |= FDCAN_IE_RF1FE;
     }
   }
 }
@@ -732,8 +724,8 @@ void can_lld_receive(CANDriver *canp, canmbx_t mailbox, CANRxFrame *crfp) {
  */
 void can_lld_abort(CANDriver *canp, canmbx_t mailbox) {
 
+  (void)canp;
   (void)mailbox;
-  canp->fdcan->TXBCR = canp->fdcan->TXBRP;
 }
 
 #if CAN_USE_SLEEP_MODE || defined(__DOXYGEN__)
@@ -777,14 +769,14 @@ void can_lld_serve_interrupt(CANDriver *canp) {
   canp->fdcan->IR = ir;
 
   /* RX events.*/
-  if ((ir & FDCAN_IR_RF0N) != 0U) {
+  if ((ir & FDCAN_IR_RF0F) != 0U) {
     /* Disabling this source until the queue is emptied.*/
-    canp->fdcan->IE &= ~FDCAN_IE_RF0NE;
+    canp->fdcan->IE &= ~FDCAN_IE_RF0FE;
     _can_rx_full_isr(canp, CAN_MAILBOX_TO_MASK(1U));
   }
-  if ((ir & FDCAN_IR_RF1N) != 0U) {
+  if ((ir & FDCAN_IR_RF1F) != 0U) {
     /* Disabling this source until the queue is emptied.*/
-    canp->fdcan->IE &= ~FDCAN_IE_RF1NE;
+    canp->fdcan->IE &= ~FDCAN_IE_RF1FE;
     _can_rx_full_isr(canp, CAN_MAILBOX_TO_MASK(2U));
   }
 
@@ -800,199 +792,128 @@ void can_lld_serve_interrupt(CANDriver *canp) {
     flags |= 1U;
     _can_tx_empty_isr(canp, flags);
   }
-  
+
+  /* Framing Error events.*/
   if (((ir & FDCAN_IR_PEA) != 0U) || ((ir & FDCAN_IR_PED) != 0U)) {
     _can_error_isr(canp, CAN_FRAMING_ERROR);
   }
+  
+  /* Bus Off events.*/
   if (canp->fdcan->CCCR & FDCAN_CCCR_INIT) {
     _can_error_isr(canp, CAN_BUS_OFF_ERROR);
   }
 }
 
-_Static_assert(sizeof(FDCANStandardFilter) == (SRAMCAN_FLS_SIZE * sizeof(int)),
-	       "FDCANStandardFilter size mismatch");
 /**
- * @brief   Configures and activates the CAN standard ID filter.
+ * @brief   Programs the filters.
+ * @note    This is an STM32-specific API.
  *
  * @param[in] canp      pointer to the @p CANDriver object
- * @param[in] num       number of filters to add
- * @param[in] crsfp     pointer to the @p FDCANStandardFilter array
+ * @param[in] num       number of entries in the filters array
+ * @param[in] cfp       pointer to the filters array
  *
  * @notapi
  */
-static void can_lld_set_standard_filters(CANDriver *canp,
-					 uint32_t num,
-					 const FDCANStandardFilter *crsfp) {
+void can_lld_set_filters(CANDriver *canp, uint8_t num, const CANFilter *cfp) {
+
+  uint8_t i;
+  uint8_t num_std_filter = 0;
+  uint8_t num_ext_filter = 0;
+
+  uint32_t can_offset_instance = 0;
+  #if STM32_CAN_USE_FDCAN1
+  if (&CAND1 == canp) {
+    can_offset_instance = CAN1_OFFSET_INSTANCE;
+  }
+  #endif
+  #if STM32_CAN_USE_FDCAN2
+  if (&CAND2 == canp) {
+    can_offset_instance = CAN2_OFFSET_INSTANCE;
+  }
+  #endif
+  #if STM32_CAN_USE_FDCAN3
+  if (&CAND3 == canp) {
+    can_offset_instance = CAN3_OFFSET_INSTANCE;
+  }
+  #endif
+  osalDbgAssert(can_offset_instance != 0, "CAN offset instance failed");
+  
+  CANRxStandardFilter *filter_std;
+  CANRxExtendedFilter *filter_ext;
+
   if (fdcan_init_mode(canp)) {
     osalDbgAssert(false, "CAN initialization failed, check clocks and pin config");
     return;
   }
   canp->fdcan->CCCR |= FDCAN_CCCR_CCE;
-  FDCANStandardFilter* const ram_fp = (FDCANStandardFilter *) (canp->ram_base +
-							       SRAMCAN_FLSSA);
-  for (unsigned i = 0U; i < num; i++) {
-    ram_fp[i] = crsfp[i];
-  }
-  canp->fdcan->SIDFC = FDCAN_CONFIG_SIDFC_LSS(num) |
-    FDCAN_CONFIG_SIDFC_FLSSA((CAN1_OFFSET_INSTANCE * SRAMCAN_SIZE) + SRAMCAN_FLSSA);
-
-  if (fdcan_active_mode(canp)) {
-    osalDbgAssert(false, "CAN initialization failed, check clocks and pin config");
-  }
-}
-
-_Static_assert(sizeof(FDCANExtendedFilter) == (SRAMCAN_FLE_SIZE * sizeof(int)),
-	       "FDCANExtendedFilter size mismatch");
-/**
- * @brief   Configures and activates the CAN extended ID filter.
- *
- * @param[in] canp      pointer to the @p CANDriver object
- * @param[in] num       number of filters to add
- * @param[in] crefp     pointer to the @p FDCANExtendedFilter array
- *
- * @notapi
- */
-static void can_lld_set_extended_filters(CANDriver *canp,
-					 uint32_t num,
-					 const FDCANExtendedFilter *crefp) {
-  if (fdcan_init_mode(canp)) {
-    osalDbgAssert(false, "CAN initialization failed, check clocks and pin config");
-    return;
-  }
-  canp->fdcan->CCCR |= FDCAN_CCCR_CCE;
-  FDCANExtendedFilter* const ram_fp = (FDCANExtendedFilter *) (canp->ram_base +
-							       SRAMCAN_FLESA);
-  for (unsigned i = 0U; i < num; i++) {
-    ram_fp[i] = crefp[i];
-  }
-  canp->fdcan->XIDFC = FDCAN_CONFIG_XIDFC_LSE(num) |
-    FDCAN_CONFIG_XIDFC_FLESA((CAN1_OFFSET_INSTANCE * SRAMCAN_SIZE) + SRAMCAN_FLESA);
-
-  if (fdcan_active_mode(canp)) {
-    osalDbgAssert(false, "CAN initialization failed, check clocks and pin config");
-  }
-}
-
-/**
- * @brief   construct a standard FDCan filter from a BXCan one
- *
- * @param[in]  cfp      pointer to the @p CANFilter object
- * @param[out] crsfp    pointer to the @p FDCANStandardFilter object
- *
- * @notapi
- */
-static void  can_set_std_from_bx(const CANFilter *cfp, FDCANStandardFilter *crsfp) {
-  *crsfp = (FDCANStandardFilter) {
-    .SFID2 = cfp->register2 >> 3,
-    ._R1 = 0,
-    .SFID1 = cfp->register1 >> 3,
-    .SFEC = cfp->assignment == CAN_FILTER_FIFO_ASSIGN_0 ?
-                               FILTERING_FEC_FIFO_0 :  FILTERING_FEC_FIFO_1,
-    .SFT = cfp->mode == CAN_FILTER_MODE_ID ?
-                        FILTERING_FT_DUALID : FILTERING_FT_MASK
-  };
-}
-
-
-/**
- * @brief   construct a extended FDCan filter from a BXCan one
- *
- * @param[in]  cfp      pointer to the @p CANFilter object
- * @param[out] crefp    pointer to the @p FDCANExtendedFilter object
- *
- * @notapi
- */
-static void  can_set_ext_from_bx(const CANFilter *cfp, FDCANExtendedFilter *crefp) {
-   *crefp = (FDCANExtendedFilter) {
-    .EFID1 = cfp->register1 >> 3,
-    .EFEC = cfp->assignment == CAN_FILTER_FIFO_ASSIGN_0 ?
-                               FILTERING_FEC_FIFO_0 :  FILTERING_FEC_FIFO_1,
-    .EFID2 = cfp->register2 >> 3,
-    ._R1 = 0,
-    .EFT = cfp->mode == CAN_FILTER_MODE_ID ?
-                        FILTERING_FT_DUALID : FILTERING_FT_MASK
-  };
- 
-}
-
-/**
- * @brief   Configures and activates the CAN standard ID filter.
- *
- * @param[in] canp      pointer to the @p CANDriver object
- * @param[in] num       number of filters to add
- * @param[in] crsfp     pointer to the @p FDCANStandardFilter array
- */
-void canSTM32SetStandardFilters(CANDriver *canp,
-				uint32_t num, 
-				const FDCANStandardFilter *crsfp) {
-  osalDbgCheck(num <= STM32_FDCAN_FLS_NBR);
-  osalDbgAssert(canp->state == CAN_READY, "invalid state");
-  chSysLock();
-  can_lld_set_standard_filters(canp, num, crsfp);
-  chSysUnlock();
-}
-
-
-/**
- * @brief   Configures and activates the CAN extended ID filter.
- *
- * @param[in] canp      pointer to the @p CANDriver object
- * @param[in] num       number of filters to add
- * @param[in] crefp     pointer to the @p FDCANExtendedFilter array
- */
-void canSTM32SetExtendedFilters(CANDriver *canp,
-				uint32_t num, 
-				const FDCANExtendedFilter *crefp) {
-  osalDbgCheck(num <= STM32_FDCAN_FLE_NBR);
-  osalDbgAssert(canp->state == CAN_READY, "invalid state");
-  chSysLock();
-  can_lld_set_extended_filters(canp, num, crefp);
-  chSysUnlock();
-}
-
-/**
- * @brief   Configures and activates the FDCan filters from a BXCan filter list.
- *
- * @param[in]  cfp      pointer to the @p CANFilter object
- * @param[in]  num       number of filters to add
- * @param[out] cfp    pointer to the @p CANFilter array
- * @notes	This is a comptability API to make FDCan 
- *              emulate BXCan filter capabilities
- */
-void canSTM32SetFilters(CANDriver *canp, uint32_t,
-			uint32_t num, const CANFilter *cfp) {
-  // find out number of standard and extended ID filters
-  uint32_t filters_nb[2] = {0}; // STD, EXT
-  for (unsigned i = 0U; i < num; i++) {
-    filters_nb[cfp[i].scale]++;
-  }
-  // start with standard filters
-  if (filters_nb[CAN_IDE_STD])  {
-    // allocate room for standard filters on the stack
-    FDCANStandardFilter crsf[filters_nb[CAN_IDE_STD]] = {};
-    uint32_t fdcan_filter_index = 0;
-    for (unsigned i = 0U; i < num; i++) {
-      if (cfp[i].scale == CAN_IDE_STD) {
-	can_set_std_from_bx(&cfp[i], &crsf[fdcan_filter_index++]);
-      }
+  
+  /* Check number of filters. */
+  for (i = 0; i < num; i++) {
+    if ((cfp[i].filter_type) == CAN_FILTER_TYPE_STD) {
+      num_std_filter++;
     }
-    can_lld_set_standard_filters(canp, filters_nb[CAN_IDE_EXT], crsf);
+    else {
+      num_ext_filter++;
+    }
   }
 
-  // then extended filters
-   if (filters_nb[CAN_IDE_EXT])  {
-    // allocate room for extended filters on the stack
-     FDCANExtendedFilter cref[filters_nb[CAN_IDE_EXT]] = {};;
-     uint32_t fdcan_filter_index = 0;
-     for (unsigned i = 0U; i < num; i++) {
-       if (cfp[i].scale == CAN_IDE_EXT) {
-	 can_set_ext_from_bx(&cfp[i], &cref[fdcan_filter_index++]);
-       }
-     }
-     can_lld_set_extended_filters(canp, filters_nb[CAN_IDE_EXT], cref);
-   }
-}
+  osalDbgAssert(((num_std_filter <= STM32_FDCAN_FLS_NBR) &&
+                 (num_ext_filter <= STM32_FDCAN_FLE_NBR)),
+                "out of range of filters supported");
 
+  /* Base address of standard filter. */
+  filter_std = (CANRxStandardFilter *)(canp->ram_base + SRAMCAN_FLSSA);
+  /* Base address of extended filter. */
+  filter_ext = (CANRxExtendedFilter *)(canp->ram_base + SRAMCAN_FLESA);
+
+  /* Scanning the filters array. */
+  for (i = 0; i < num; i++) {
+    /* Standard filter configuration */
+    if ((cfp[i].filter_type) == CAN_FILTER_TYPE_STD) {
+      /* Configure */
+      filter_std->data32 = (FDCAN_STD_FILTER_SFID2(cfp[i].identifier2) |
+                            FDCAN_STD_FILTER_SFID1(cfp[i].identifier1) |
+                            FDCAN_STD_FILTER_SFEC(cfp[i].filter_cfg) |
+                            FDCAN_STD_FILTER_SFT(cfp[i].filter_mode));
+      filter_std++;
+    }
+    /* Extended filter configuration */
+    else {
+
+      /* Configure */
+      filter_ext->data32[0] = (FDCAN_EXT_FILTER_EFID1(cfp[i].identifier1) |
+                               FDCAN_EXT_FILTER_EFEC(cfp[i].filter_cfg));
+      filter_ext->data32[1] = (FDCAN_EXT_FILTER_EFID2(cfp[i].identifier2) |
+                               FDCAN_EXT_FILTER_EFT(cfp[i].filter_mode));
+      filter_ext++;
+    }
+  }
+  canp->fdcan->SIDFC = FDCAN_CONFIG_SIDFC_LSS(num_std_filter) |
+    FDCAN_CONFIG_SIDFC_FLSSA((can_offset_instance * SRAMCAN_SIZE) + SRAMCAN_FLSSA);
+  canp->fdcan->XIDFC = FDCAN_CONFIG_XIDFC_LSE(num_ext_filter) |
+    FDCAN_CONFIG_XIDFC_FLESA((can_offset_instance * SRAMCAN_SIZE) + SRAMCAN_FLESA);
+
+  if (fdcan_active_mode(canp)) {
+    osalDbgAssert(false, "CAN initialization failed, check clocks and pin config");
+  }
+  
+}
+/**
+ * @brief   Programs the filters.
+ * @note    This is an STM32-specific API.
+ *
+ * @param[in] canp      pointer to the @p CANDriver object
+ * @param[in] num       number of entries in the filters array
+ * @param[in] cfp       pointer to the filters array
+ *
+ * @api
+ */
+void canSTM32SetFilters(CANDriver *canp, uint8_t num, const CANFilter *cfp) {
+
+  osalDbgAssert(canp->state == CAN_READY, "invalid state");
+
+  can_lld_set_filters(canp, num, cfp);
+}
 
 #endif /* HAL_USE_CAN */
 
