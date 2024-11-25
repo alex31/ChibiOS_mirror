@@ -425,7 +425,23 @@ bool can_lld_start(CANDriver *canp) {
   /* Setting up operation mode except driver-controlled bits.*/
   canp->fdcan->NBTP = canp->config->NBTP;
   canp->fdcan->DBTP = canp->config->DBTP;
+  canp->fdcan->TDCR = canp->config->TDCR;
   canp->fdcan->CCCR |= canp->config->CCCR;
+  /* setting timing delay compensation if TDC bit is set 
+     Tdc offset Tdc filter = DataTimeSeg1*DataPrescaler 
+     Tdc filter = Tdc offset - 1 */
+  /* if (canp->config->DBTP & FDCAN_DBTP_TDC) { */
+  /*   const uint32_t brp = (canp->config->DBTP & FDCAN_DBTP_DBRP_Msk) */
+  /*     >> FDCAN_DBTP_DBRP_Pos; */
+  /*   const uint32_t tseg1 = (canp->config->DBTP & FDCAN_DBTP_DTSEG1_Msk) */
+  /*     >> FDCAN_DBTP_DTSEG1_Pos; */
+  /*   const uint32_t offset = (brp + 1U) * (tseg1 + 1U); */
+  /*   const uint32_t tdc_offset = offset <= 127U ? offset : 127U; */
+  /*   const uint32_t tdc_filter = tdc_offset - 1U; */
+    
+  /*   canp->fdcan->TDCR =  (tdc_offset << FDCAN_TDCR_TDCO_Pos) | */
+  /* 			 (tdc_filter << FDCAN_TDCR_TDCF_Pos); */
+  /* } */
 
   /* TEST is only writable when FDCAN_CCCR_TEST is set and FDCAN is still in
    * configuration mode */
