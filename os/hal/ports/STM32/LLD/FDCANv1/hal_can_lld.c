@@ -685,9 +685,11 @@ void can_lld_set_filters(CANDriver *canp, uint8_t num, const CANFilter *cfp) {
  */
 void canSTM32SetFilters(CANDriver *canp, uint8_t num, const CANFilter *cfp) {
 
+  osalSysLock();
   osalDbgAssert(canp->state == CAN_READY, "invalid state");
 
   can_lld_set_filters(canp, num, cfp);
+  osalSysUnlock();
 }
 
 #endif /* HAL_USE_CAN */

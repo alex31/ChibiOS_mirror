@@ -835,7 +835,7 @@ void can_lld_set_filters(CANDriver *canp, uint8_t num, const CANFilter *cfp) {
   uint8_t num_std_filter = 0;
   uint8_t num_ext_filter = 0;
 
-  uint32_t can_offset_instance = 0;
+  uint32_t can_offset_instance = -1UL;
   #if STM32_CAN_USE_FDCAN1
   if (&CAND1 == canp) {
     can_offset_instance = CAN1_OFFSET_INSTANCE;
@@ -851,7 +851,7 @@ void can_lld_set_filters(CANDriver *canp, uint8_t num, const CANFilter *cfp) {
     can_offset_instance = CAN3_OFFSET_INSTANCE;
   }
   #endif
-  osalDbgAssert(can_offset_instance != 0, "CAN offset instance failed");
+  osalDbgAssert(can_offset_instance != -1UL, "CAN offset instance failed");
   
   CANRxStandardFilter *filter_std;
   CANRxExtendedFilter *filter_ext;
@@ -925,9 +925,11 @@ void can_lld_set_filters(CANDriver *canp, uint8_t num, const CANFilter *cfp) {
  */
 void canSTM32SetFilters(CANDriver *canp, uint8_t num, const CANFilter *cfp) {
 
+  osalSysLock();
   osalDbgAssert(canp->state == CAN_READY, "invalid state");
 
   can_lld_set_filters(canp, num, cfp);
+  osalSysUnlock();
 }
 
 #endif /* HAL_USE_CAN */
