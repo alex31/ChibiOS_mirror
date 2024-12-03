@@ -116,6 +116,7 @@ static inline bool stm32_flash_dual_bank(EFlashDriver *eflp) {
 #if STM32_FLASH_NUMBER_OF_BANKS > 1
   return ((eflp->flash->OPTR & (FLASH_OPTR_DBANK)) != 0U);
 #endif
+  (void) eflp;
   return false;
 }
 
@@ -241,8 +242,10 @@ flash_error_t efl_lld_read(void *instance, flash_offset_t offset,
   stm32_flash_clear_status(devp);
 
   /* Actual read implementation.*/
-  memcpy((void *)rp, (const void *)efl_lld_get_descriptor(instance)->address
-                                   + offset, n);
+  memcpy((void *)rp,
+	 (const void *) ((uint32_t) efl_lld_get_descriptor(instance)->address
+			 + offset),
+	 n);
 
   /* Checking for errors after reading.*/
   if ((devp->flash->SR & FLASH_SR_RDERR) != 0U) {
